@@ -64,12 +64,15 @@ export function StatusBreakdownDonut({
   subtitle,
   actions,
   compact,
-  chartHeight = compact ? 120 : 240,
+  chartHeight = compact ? 150 : 240,
 }: StatusBreakdownDonutProps) {
   const chartData = data.map((d) => ({
     ...d,
     color: DEFAULT_COLORS[d.name] ?? d.color,
   }))
+
+  const innerR = compact ? 34 : 60
+  const outerR = compact ? 50 : 90
 
   return (
     <ChartCard
@@ -88,8 +91,8 @@ export function StatusBreakdownDonut({
               data={chartData}
               cx="50%"
               cy="50%"
-              innerRadius={60}
-              outerRadius={90}
+              innerRadius={innerR}
+              outerRadius={outerR}
               paddingAngle={2}
               dataKey="value"
               strokeWidth={0}

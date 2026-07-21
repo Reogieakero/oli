@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Sidebar } from '@/components/ui/Sidebar/Sidebar'
+import { Navbar } from '@/components/ui/Navbar/Navbar'
 import styles from './layout.module.css'
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -24,6 +25,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     <div className={styles.layout}>
       <Sidebar />
       <div className={styles.main}>
+        <Navbar />
         <div className={styles.content}>
           {children}
         </div>

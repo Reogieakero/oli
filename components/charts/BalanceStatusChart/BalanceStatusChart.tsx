@@ -64,7 +64,7 @@ export function BalanceStatusChart({
   subtitle,
   actions,
   compact,
-  chartHeight = compact ? 100 : 240,
+  chartHeight = compact ? 160 : 240,
 }: BalanceStatusChartProps) {
   const chartData = data.map((d) => ({
     ...d,
@@ -85,7 +85,7 @@ export function BalanceStatusChart({
         <BarChart
           data={chartData}
           layout="vertical"
-          margin={{ top: 4, right: 4, bottom: 0, left: 0 }}
+          margin={{ top: 4, right: 4, bottom: compact ? 20 : 4, left: 0 }}
         >
           <XAxis
             type="number"

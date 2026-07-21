@@ -2,9 +2,11 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: var(--space-3) var(--space-4);
+  height: 48px;
+  padding: 0 var(--space-4);
   border-bottom: 1px solid var(--color-border);
   background: var(--color-neutral-0);
+  flex-shrink: 0;
 }
 
 .left {
@@ -13,15 +15,112 @@
   gap: var(--space-3);
 }
 
-.pageTitle {
+.brand {
   font-family: var(--font-heading);
-  font-size: var(--text-xl);
-  font-weight: 600;
+  font-size: var(--text-base);
+  font-weight: 700;
   color: var(--color-neutral-900);
+  letter-spacing: -0.01em;
 }
 
 .right {
   display: flex;
   align-items: center;
   gap: var(--space-2);
+}
+
+.iconBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: var(--radius-control-sm);
+  background: transparent;
+  color: var(--color-muted-fg);
+  cursor: pointer;
+  transition: background 0.1s, color 0.1s;
+}
+
+.iconBtn:hover {
+  background: var(--color-muted-bg);
+  color: var(--color-neutral-900);
+}
+
+.divider {
+  width: 1px;
+  height: 20px;
+  background: var(--color-border);
+  margin: 0 var(--space-1);
+}
+
+.userMenu {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 2px 6px 2px 2px;
+  border-radius: var(--radius-control-sm);
+  cursor: pointer;
+  transition: background 0.1s;
+}
+
+.userMenu:hover {
+  background: var(--color-muted-bg);
+}
+
+.avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: var(--radius-full);
+  background: var(--color-brand-primary);
+  color: var(--color-neutral-0);
+  font-size: 11px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.userText {
+  display: none;
+}
+
+.userName {
+  font-size: var(--control-font-size);
+  font-weight: 500;
+  color: var(--color-neutral-900);
+  line-height: 1.2;
+}
+
+.userRole {
+  font-size: 11px;
+  color: var(--color-muted-fg);
+  line-height: 1.2;
+}
+
+.logoutBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: var(--radius-control-sm);
+  background: transparent;
+  color: var(--color-muted-fg);
+  cursor: pointer;
+  transition: background 0.1s, color 0.1s;
+}
+
+.logoutBtn:hover {
+  background: var(--color-muted-bg);
+  color: var(--color-status-danger);
+}
+
+@media (min-width: 768px) {
+  .userText {
+    display: block;
+  }
 }

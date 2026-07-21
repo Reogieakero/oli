@@ -163,13 +163,13 @@
 }
 
 .inputError {
-  border-color: #D32F2F !important;
-  box-shadow: 0 0 0 3px rgba(211, 47, 47, 0.2) !important;
+  border-color: var(--color-status-danger) !important;
+  box-shadow: 0 0 0 3px rgba(214, 73, 61, 0.2) !important;
 }
 
 .fieldError {
   font-size: var(--text-xs);
-  color: #D32F2F;
+  color: var(--color-status-danger);
   padding-left: var(--space-1);
 }
 
@@ -213,15 +213,15 @@
 .submitBtn {
   width: 100%;
   margin-top: var(--space-2);
-  background: var(--color-neutral-900) !important;
-  border-color: var(--color-neutral-900) !important;
-  box-shadow: 0 8px 20px rgba(15, 32, 39, 0.25) !important;
+  background: var(--color-brand-primary) !important;
+  border-color: var(--color-brand-primary) !important;
+  box-shadow: 0 8px 20px rgba(64, 165, 190, 0.3) !important;
 }
 
 .submitBtn:hover:not(:disabled) {
-  background: #000 !important;
-  border-color: #000 !important;
-  box-shadow: 0 10px 24px rgba(15, 32, 39, 0.3) !important;
+  background: var(--color-brand-dark) !important;
+  border-color: var(--color-brand-dark) !important;
+  box-shadow: 0 10px 24px rgba(31, 92, 110, 0.35) !important;
 }
 
 .dividerRow {
@@ -274,8 +274,8 @@
 }
 
 .error {
-  background: rgba(211, 47, 47, 0.08);
-  color: #D32F2F;
+  background: var(--color-status-danger-bg);
+  color: var(--color-status-danger);
   font-size: var(--text-sm);
   padding: var(--space-3) var(--space-4);
   border-radius: 12px;
