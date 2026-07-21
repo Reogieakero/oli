@@ -1,0 +1,29 @@
+.wrapper {
+  display: flex;
+}
+
+.clearBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-full);
+  background: var(--color-muted-fg);
+  color: var(--color-neutral-0);
+  font-size: 10px;
+  line-height: 0;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.clearBtn:hover {
+  background: var(--color-neutral-900);
+}
+
+.clearBtn:focus-visible {
+  outline: 2px solid var(--color-brand-accent);
+  outline-offset: 2px;
+}

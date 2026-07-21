@@ -1,0 +1,44 @@
+.triggerBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.filterPanel {
+  padding: var(--space-1);
+  min-width: 200px;
+}
+
+.filterOption {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  height: var(--control-height-sm);
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-control-sm);
+  cursor: pointer;
+  font-size: var(--control-font-size);
+  color: var(--color-neutral-900);
+  transition: background 0.1s;
+}
+
+.filterOption:hover {
+  background: var(--color-muted-bg);
+}
+
+.filterLabel {
+  flex: 1;
+}
+
+.filterCount {
+  font-size: calc(var(--control-font-size) - 1px);
+  color: var(--color-muted-fg);
+}
+
+.applyBtn {
+  display: flex;
+  justify-content: flex-end;
+  padding: var(--space-1) var(--space-2) 0;
+  margin-top: var(--space-1);
+  border-top: 1px solid var(--color-border);
+}

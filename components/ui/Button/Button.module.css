@@ -1,0 +1,113 @@
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  border: 1px solid transparent;
+  border-radius: var(--radius-control);
+  font-size: var(--control-font-size);
+  font-weight: 500;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, box-shadow 0.15s, opacity 0.15s;
+  text-decoration: none;
+  user-select: none;
+}
+
+.btn:focus-visible {
+  outline: 2px solid var(--color-brand-accent);
+  outline-offset: 2px;
+}
+
+.btn:disabled {
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+/* Sizes */
+.sm {
+  height: var(--control-height-sm);
+  padding: 0 10px;
+  font-size: calc(var(--control-font-size) - 1px);
+}
+
+.md {
+  height: var(--control-height-md);
+  padding: 0 var(--control-padding-x);
+}
+
+.lg {
+  height: var(--control-height-lg);
+  padding: 0 16px;
+}
+
+/* Icon-only sizing */
+.iconOnly.sm {
+  width: var(--control-height-sm);
+  padding: 0;
+}
+
+.iconOnly.md {
+  width: var(--control-height-md);
+  padding: 0;
+}
+
+.iconOnly.lg {
+  width: var(--control-height-lg);
+  padding: 0;
+}
+
+/* Variants */
+.primary {
+  background: var(--color-brand-primary);
+  color: var(--color-neutral-0);
+  border-color: var(--color-brand-primary);
+}
+
+.primary:hover:not(:disabled) {
+  background: var(--color-brand-dark);
+  border-color: var(--color-brand-dark);
+}
+
+.secondary {
+  background: var(--color-muted-bg);
+  color: var(--color-neutral-900);
+  border-color: transparent;
+}
+
+.secondary:hover:not(:disabled) {
+  background: rgba(15, 32, 39, 0.08);
+}
+
+.outline {
+  background: transparent;
+  color: var(--color-neutral-900);
+  border-color: var(--color-border);
+}
+
+.outline:hover:not(:disabled) {
+  background: var(--color-muted-bg);
+  border-color: var(--color-border-hover);
+}
+
+.ghost {
+  background: transparent;
+  color: var(--color-neutral-900);
+  border-color: transparent;
+}
+
+.ghost:hover:not(:disabled) {
+  background: var(--color-muted-bg);
+}
+
+.destructive {
+  background: var(--color-status-danger);
+  color: var(--color-neutral-0);
+  border-color: var(--color-status-danger);
+}
+
+.destructive:hover:not(:disabled) {
+  background: #b33a30;
+  border-color: #b33a30;
+}
