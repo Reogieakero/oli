@@ -31,6 +31,7 @@ interface AttendanceTrendChartProps {
   subtitle?: string
   actions?: ReactNode
   height?: number
+  emptyMessage?: string
 }
 
 function CustomTooltip({ active, payload, label }: any) {
@@ -63,6 +64,7 @@ export function AttendanceTrendChart({
   subtitle,
   actions,
   height = 240,
+  emptyMessage = 'No attendance records for this period.',
 }: AttendanceTrendChartProps) {
   const gradientId = useId()
 
@@ -73,7 +75,7 @@ export function AttendanceTrendChart({
       actions={actions}
       loading={loading}
       empty={data.length === 0}
-      emptyMessage="No attendance records for this period."
+      emptyMessage={emptyMessage}
     >
       <ResponsiveContainer width="100%" height={height}>
         <AreaChart data={data} margin={{ top: 4, right: 4, bottom: 0, left: -20 }}>

@@ -8,7 +8,7 @@ export { Input } from './Input/Input'
 export type { InputSize } from './Input/Input'
 
 export { Select } from './Select/Select'
-export type { SelectSize } from './Select/Select'
+export type { SelectSize, SelectOption } from './Select/Select'
 
 export { SearchBar } from './SearchBar/SearchBar'
 export type { SearchBarProps } from './SearchBar/SearchBar'

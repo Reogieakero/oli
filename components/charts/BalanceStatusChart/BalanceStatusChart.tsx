@@ -31,9 +31,9 @@ interface BalanceStatusChartProps {
 }
 
 const DEFAULT_COLORS: Record<string, string> = {
-  Unpaid: chartColors.danger,
-  Partial: chartColors.warning,
-  Paid: chartColors.success,
+  Unpaid: chartColors.dark,
+  Partial: chartColors.primary,
+  Paid: chartColors.accent,
 }
 
 function CustomTooltip({ active, payload }: any) {

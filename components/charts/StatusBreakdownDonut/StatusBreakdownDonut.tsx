@@ -29,10 +29,10 @@ interface StatusBreakdownDonutProps {
 }
 
 const DEFAULT_COLORS: Record<string, string> = {
-  Present: chartColors.success,
-  Late: chartColors.warning,
-  Absent: chartColors.danger,
-  Pending: chartColors.neutral,
+  Present: chartColors.primary,
+  Late: chartColors.accent,
+  Absent: chartColors.dark,
+  Pending: chartColors.light,
 }
 
 function CustomTooltip({ active, payload }: any) {
@@ -84,80 +84,75 @@ export function StatusBreakdownDonut({
       emptyMessage="No attendance records yet."
       compact={compact}
     >
-      <div style={{ position: 'relative' }}>
-        <ResponsiveContainer width="100%" height={chartHeight}>
-          <PieChart>
-            <Pie
-              data={chartData}
-              cx="50%"
-              cy="50%"
-              innerRadius={innerR}
-              outerRadius={outerR}
-              paddingAngle={2}
-              dataKey="value"
-              strokeWidth={0}
+      <div style={{ display: 'flex', alignItems: 'center', gap: compact ? 8 : 16 }}>
+        {total > 0 && (
+          <div style={{ flexShrink: 0, textAlign: 'center', minWidth: compact ? 50 : 64 }}>
+            <div
+              style={{
+                fontFamily: 'var(--font-heading)',
+                fontSize: compact ? 22 : 28,
+                fontWeight: 700,
+                lineHeight: 1,
+                color: 'var(--color-neutral-900)',
+              }}
             >
-              {chartData.map((entry, i) => (
-                <Cell key={i} fill={entry.color} />
-              ))}
-            </Pie>
-            <Tooltip content={<CustomTooltip />} />
-          </PieChart>
-        </ResponsiveContainer>
-        <div
-          style={{
-            position: 'absolute',
-            top: '50%',
-            left: '50%',
-            transform: 'translate(-50%, -50%)',
-            textAlign: 'center',
-            pointerEvents: 'none',
-          }}
-        >
-          <div
-            style={{
-              fontFamily: 'var(--font-heading)',
-              fontSize: 28,
-              fontWeight: 700,
-              lineHeight: 1,
-              color: 'var(--color-neutral-900)',
-            }}
-          >
-            {total}
-          </div>
-          <div
-            style={{
-              fontSize: 11,
-              color: 'var(--color-muted-fg)',
-              marginTop: 2,
-            }}
-          >
-            Total
-          </div>
-        </div>
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'center',
-            gap: 16,
-            marginTop: 8,
-            fontSize: 13,
-          }}
-        >
-          {chartData.map((d) => (
-            <div key={d.name} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <span
-                style={{
-                  width: 8,
-                  height: 8,
-                  borderRadius: '50%',
-                  background: d.color,
-                  display: 'inline-block',
-                }}
-              />
-              <span style={{ color: 'var(--color-muted-fg)' }}>{d.name}</span>
+              {total}
             </div>
-          ))}
+            <div
+              style={{
+                fontSize: 11,
+                color: 'var(--color-muted-fg)',
+                marginTop: 2,
+              }}
+            >
+              Total
+            </div>
+          </div>
+        )}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <ResponsiveContainer width="100%" height={chartHeight}>
+            <PieChart>
+              <Pie
+                data={chartData}
+                cx="50%"
+                cy="50%"
+                innerRadius={innerR}
+                outerRadius={outerR}
+                paddingAngle={2}
+                dataKey="value"
+                strokeWidth={0}
+              >
+                {chartData.map((entry, i) => (
+                  <Cell key={i} fill={entry.color} />
+                ))}
+              </Pie>
+              <Tooltip content={<CustomTooltip />} />
+            </PieChart>
+          </ResponsiveContainer>
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'center',
+              gap: 16,
+              marginTop: 8,
+              fontSize: 13,
+            }}
+          >
+            {chartData.map((d) => (
+              <div key={d.name} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <span
+                  style={{
+                    width: 8,
+                    height: 8,
+                    borderRadius: '50%',
+                    background: d.color,
+                    display: 'inline-block',
+                  }}
+                />
+                <span style={{ color: 'var(--color-muted-fg)' }}>{d.name}</span>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </ChartCard>
