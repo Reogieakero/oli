@@ -4,7 +4,8 @@ async function list(req, res, next) {
   try {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 20;
-    const result = await eventService.listEvents(req.user, page, limit);
+    const courseId = req.query.courseId || undefined;
+    const result = await eventService.listEvents(req.user, page, limit, courseId);
     res.json(result);
   } catch (err) {
     next(err);

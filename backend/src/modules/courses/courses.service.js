@@ -4,14 +4,22 @@ const { NotFoundError, ConflictError } = require('../../utils/errors');
 async function listCourses(page = 1, limit = 20) {
   const skip = (page - 1) * limit;
   const [data, total] = await Promise.all([
-    prisma.course.findMany({ skip, take: limit, orderBy: { code: 'asc' } }),
+    prisma.course.findMany({
+      skip,
+      take: limit,
+      orderBy: { code: 'asc' },
+      include: { _count: { select: { events: true, students: true } } },
+    }),
     prisma.course.count(),
   ]);
   return { data, total, page, limit };
 }
 
 async function getCourse(id) {
-  const course = await prisma.course.findUnique({ where: { id } });
+  const course = await prisma.course.findUnique({
+    where: { id },
+    include: { _count: { select: { events: true, students: true } } },
+  });
   if (!course) throw new NotFoundError('Course not found');
   return course;
 }

@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Sidebar } from '@/components/ui/Sidebar/Sidebar'
 import { Navbar } from '@/components/ui/Navbar/Navbar'
+import { ToastProvider } from '@/components/ui/Toast/Toast'
 import styles from './layout.module.css'
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -22,14 +23,16 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   if (!authed) return null
 
   return (
-    <div className={styles.layout}>
-      <Sidebar />
-      <div className={styles.main}>
-        <Navbar />
-        <div className={styles.content}>
-          {children}
+    <ToastProvider>
+      <div className={styles.layout}>
+        <Sidebar />
+        <div className={styles.main}>
+          <Navbar />
+          <div className={styles.content}>
+            {children}
+          </div>
         </div>
       </div>
-    </div>
+    </ToastProvider>
   )
 }

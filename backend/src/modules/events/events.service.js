@@ -6,14 +6,19 @@ function generatePasscode() {
   return crypto.randomInt(100000, 999999).toString();
 }
 
-async function listEvents(user, page = 1, limit = 20) {
+async function listEvents(user, page = 1, limit = 20, courseId) {
   const skip = (page - 1) * limit;
   let where = {};
+
+  if (courseId) {
+    where.courseId = courseId;
+  }
 
   if (user.role === 'student') {
     const student = await prisma.student.findUnique({ where: { userId: user.sub } });
     if (student) {
       where = {
+        ...where,
         OR: [
           { courseId: student.courseId, targetYearLevel: student.yearLevel },
           { courseId: student.courseId, targetYearLevel: null },
