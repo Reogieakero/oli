@@ -125,25 +125,6 @@ async function createEvent(userId, data, coverFile) {
       },
     });
 
-    if (data.isMandatory && data.courseId) {
-      const students = await tx.student.findMany({
-        where: {
-          courseId: data.courseId,
-          ...(data.targetYearLevel ? { yearLevel: data.targetYearLevel } : {}),
-        },
-      });
-
-      if (students.length > 0) {
-        await tx.attendanceRecord.createMany({
-          data: students.map(s => ({
-            studentId: s.id,
-            eventId: newEvent.id,
-            status: 'absent',
-          })),
-        });
-      }
-    }
-
     return newEvent;
   });
 

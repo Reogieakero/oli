@@ -1,0 +1,163 @@
+.page {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.title {
+  font-size: 24px;
+  font-weight: 700;
+  margin: 0;
+}
+
+.headerRight {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.filterBar {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: flex-end;
+}
+
+.search {
+  max-width: 280px;
+}
+
+.filterSelect {
+  width: 200px;
+}
+
+.summary {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  font-size: 14px;
+  color: var(--color-text-secondary);
+}
+
+.summaryItem {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.summaryValue {
+  font-weight: 600;
+  color: var(--color-neutral-900);
+}
+
+.summaryBullet {
+  color: var(--color-border);
+}
+
+.bulkBar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--color-neutral-100);
+  border-radius: 8px;
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+
+.bulkCount {
+  font-weight: 600;
+  color: var(--color-neutral-900);
+  margin-right: 8px;
+}
+
+.muted {
+  color: var(--color-text-muted);
+  font-size: 14px;
+}
+
+.emptyState {
+  text-align: center;
+  padding: 40px 16px;
+  color: var(--color-text-muted);
+}
+
+.actionBtns {
+  display: flex;
+  gap: 4px;
+}
+
+.dialogFooter {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.detailGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.detailItem {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.detailItemFull {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.detailLabel {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-muted);
+}
+
+.statusSelect {
+  width: 100%;
+}
+
+.historySection {
+  margin-top: 16px;
+  border-top: 1px solid var(--color-border);
+  padding-top: 16px;
+}
+
+.historyTitle {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-neutral-900);
+  margin-bottom: 8px;
+}
+
+.addForm {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+}
