@@ -1,5 +1,5 @@
 .page {
-  padding: 24px;
+  padding: 16px;
 }
 
 .header {
@@ -24,11 +24,6 @@
 }
 
 .emptyState {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 12px;
-  padding: 48px 24px;
   color: var(--color-text-muted);
 }
 

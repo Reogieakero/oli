@@ -149,6 +149,9 @@ model Event {
   courseId         String?  @map("course_id") @db.Uuid
   title            String   @db.VarChar(150)
   description      String?
+  importantNotice  String?  @map("important_notice")
+  coverPhoto       String?  @map("cover_photo")
+  coverPhotoFileName String? @map("cover_photo_file_name")
   venue            String   @db.VarChar(150)
   eventDate        DateTime @map("event_date") @db.Date
   startTime        DateTime @map("start_time") @db.Time(6)
@@ -182,7 +185,7 @@ model AttendanceRecord {
   updatedAt       DateTime         @updatedAt @map("updated_at") @db.Timestamp(6)
 
   student Student          @relation(fields: [studentId], references: [id])
-  event   Event            @relation(fields: [eventId], references: [id])
+  event   Event            @relation(fields: [eventId], references: [id], onDelete: Cascade)
   dispute Dispute?
 
   @@unique([studentId, eventId], name: "uq_attendance_event_student")

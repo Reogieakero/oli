@@ -30,6 +30,8 @@ export { Card, CardHeader, CardBody, CardFooter } from './Card/Card'
 export type { CardProps, CardHeaderProps, CardBodyProps, CardFooterProps } from './Card/Card'
 
 export { Dialog } from './Dialog/Dialog'
+export { DatePicker } from './DatePicker/DatePicker'
+export { TimePicker } from './TimePicker/TimePicker'
 
 export { ToastProvider, useToast } from './Toast/Toast'
 export type { ToastData, ToastVariant } from './Toast/Toast'

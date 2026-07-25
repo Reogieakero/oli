@@ -18,12 +18,14 @@ interface DialogProps {
   children?: ReactNode
   footer?: ReactNode
   className?: string
+  bodyClassName?: string
+  fullscreen?: boolean
 }
 
 const FOCUSABLE_SELECTOR =
   'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])'
 
-function Dialog({ open, onClose, title, children, footer, className }: DialogProps) {
+function Dialog({ open, onClose, title, children, footer, className, bodyClassName, fullscreen }: DialogProps) {
   const dialogRef = useRef<HTMLDivElement>(null)
   const previousFocusRef = useRef<HTMLElement | null>(null)
 
@@ -88,15 +90,15 @@ function Dialog({ open, onClose, title, children, footer, className }: DialogPro
   if (!open) return null
 
   const dialogContent = (
-    <div
-      className={styles.overlay}
-      onClick={handleOverlayClick}
-      role="presentation"
-    >
       <div
-        ref={dialogRef}
-        className={[styles.dialog, className].filter(Boolean).join(' ')}
-        role="dialog"
+        className={[styles.overlay, fullscreen ? styles.overlayFullscreen : null].filter(Boolean).join(' ')}
+        onClick={handleOverlayClick}
+        role="presentation"
+      >
+        <div
+          ref={dialogRef}
+          className={[styles.dialog, fullscreen ? styles.dialogFullscreen : null, className].filter(Boolean).join(' ')}
+          role="dialog"
         aria-modal="true"
         aria-label={title}
         onKeyDown={handleKeyDown}
@@ -115,7 +117,7 @@ function Dialog({ open, onClose, title, children, footer, className }: DialogPro
           </button>
         </div>
 
-        {children && <div className={styles.body}>{children}</div>}
+        {children && <div className={[styles.body, bodyClassName].filter(Boolean).join(' ')}>{children}</div>}
 
         {footer && <div className={styles.footer}>{footer}</div>}
       </div>

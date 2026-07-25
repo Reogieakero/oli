@@ -27,10 +27,15 @@ export async function apiClient<T = unknown>(
 ): Promise<T> {
   const { method = 'GET', body, headers = {}, authenticated = false } = options;
 
+  const isFormData = body instanceof FormData;
+
   const requestHeaders: Record<string, string> = {
-    'Content-Type': 'application/json',
     ...headers,
   };
+
+  if (!isFormData) {
+    requestHeaders['Content-Type'] = 'application/json';
+  }
 
   if (authenticated) {
     const token = await getAccessToken();
@@ -42,7 +47,7 @@ export async function apiClient<T = unknown>(
   const res = await fetch(`${BASE_URL}${path}`, {
     method,
     headers: requestHeaders,
-    body: body ? JSON.stringify(body) : undefined,
+    body: isFormData ? body : body ? JSON.stringify(body) : undefined,
   });
 
   if (!res.ok) {

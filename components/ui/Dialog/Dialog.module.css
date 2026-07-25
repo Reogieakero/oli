@@ -84,6 +84,18 @@
   border-top: 1px solid var(--color-border);
 }
 
+.overlayFullscreen {
+  padding: 16px;
+  align-items: flex-start;
+}
+
+.dialogFullscreen {
+  max-width: none;
+  max-height: none;
+  height: 100%;
+  border-radius: var(--radius-lg);
+}
+
 @keyframes overlayIn {
   from { opacity: 0; }
   to { opacity: 1; }

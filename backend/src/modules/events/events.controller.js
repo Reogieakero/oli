@@ -23,7 +23,8 @@ async function getById(req, res, next) {
 
 async function create(req, res, next) {
   try {
-    const event = await eventService.createEvent(req.user.sub, req.parsed.body);
+    const coverFile = req.file || null;
+    const event = await eventService.createEvent(req.user.sub, req.parsed.body, coverFile);
     res.status(201).json(event);
   } catch (err) {
     next(err);
@@ -32,7 +33,8 @@ async function create(req, res, next) {
 
 async function update(req, res, next) {
   try {
-    const event = await eventService.updateEvent(req.params.id, req.parsed.body);
+    const coverFile = req.file || null;
+    const event = await eventService.updateEvent(req.params.id, req.parsed.body, coverFile);
     res.json(event);
   } catch (err) {
     next(err);
@@ -48,4 +50,13 @@ async function remove(req, res, next) {
   }
 }
 
-module.exports = { list, getById, create, update, remove };
+async function getCoverUrl(req, res, next) {
+  try {
+    const url = await eventService.getCoverSignedUrl(req.params.id);
+    res.json({ signedUrl: url });
+  } catch (err) {
+    next(err);
+  }
+}
+
+module.exports = { list, getById, create, update, remove, getCoverUrl };
