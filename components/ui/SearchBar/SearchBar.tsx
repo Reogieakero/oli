@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, useRef, useEffect, type ChangeEvent } from 'react'
+import { useState, useCallback, type ChangeEvent } from 'react'
 import { Input, type InputSize } from '../Input/Input'
 import styles from './SearchBar.module.css'
 
@@ -27,37 +27,18 @@ function SearchBar({
   const isControlled = controlledValue !== undefined
   const value = isControlled ? controlledValue : internalValue
 
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-
-  const debouncedOnChange = useCallback(
-    (val: string) => {
-      if (timerRef.current) clearTimeout(timerRef.current)
-      timerRef.current = setTimeout(() => {
-        onChange?.(val)
-      }, 300)
-    },
-    [onChange]
-  )
-
-  useEffect(() => {
-    return () => {
-      if (timerRef.current) clearTimeout(timerRef.current)
-    }
-  }, [])
-
   const handleChange = useCallback(
     (e: ChangeEvent<HTMLInputElement>) => {
       const next = e.target.value
       if (!isControlled) setInternalValue(next)
-      debouncedOnChange(next)
+      onChange?.(next)
     },
-    [isControlled, debouncedOnChange]
+    [isControlled, onChange]
   )
 
   const handleClear = useCallback(() => {
     if (!isControlled) setInternalValue('')
     onChange?.('')
-    if (timerRef.current) clearTimeout(timerRef.current)
   }, [isControlled, onChange])
 
   const searchIcon = (

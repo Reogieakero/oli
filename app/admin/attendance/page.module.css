@@ -96,8 +96,15 @@
 
 .dialogFooter {
   display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.dialogFooterRight {
+  display: flex;
   gap: 8px;
-  justify-content: flex-end;
+  align-items: center;
 }
 
 .detailGrid {
@@ -161,3 +168,91 @@
   font-weight: 600;
   color: var(--color-text-secondary);
 }
+
+.spinner {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: btnSpin 0.6s linear infinite;
+  vertical-align: middle;
+}
+
+@keyframes btnSpin {
+  to { transform: rotate(360deg); }
+}
+
+.detailDialogBody {
+  overflow-y: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.detailDialogBody::-webkit-scrollbar {
+  display: none;
+}
+
+.addDialogBody {
+  overflow-y: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.addDialogBody::-webkit-scrollbar {
+  display: none;
+}
+
+.drawerHeader {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.drawerTitle {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--color-neutral-900);
+}
+
+.drawerSubtitle {
+  font-size: 14px;
+  color: var(--color-text-muted);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.detailGridPro {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.detailRowPro {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--color-border);
+}
+.detailRowPro:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.detailLabelPro {
+  font-size: 14px;
+  color: var(--color-text-muted);
+}
+
+.detailValuePro {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-neutral-900);
+  text-align: right;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+

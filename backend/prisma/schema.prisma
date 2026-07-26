@@ -244,12 +244,15 @@ model Balance {
 }
 
 model PaymentMethod {
-  id        String   @id @default(uuid()) @db.Uuid
-  name      String   @unique @map("name") @db.VarChar(50)
-  facultyId String   @map("faculty_id") @db.Uuid
-  isActive  Boolean  @default(true) @map("is_active")
-  createdAt DateTime @default(now()) @map("created_at") @db.Timestamp(6)
-  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamp(6)
+  id            String   @id @default(uuid()) @db.Uuid
+  name          String   @unique @map("name") @db.VarChar(50)
+  accountName   String?  @map("account_name") @db.VarChar(100)
+  accountNumber String?  @map("account_number") @db.VarChar(100)
+  instructions  String?  @map("instructions") @db.VarChar(255)
+  facultyId     String   @map("faculty_id") @db.Uuid
+  isActive      Boolean  @default(true) @map("is_active")
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt     DateTime @updatedAt @map("updated_at") @db.Timestamp(6)
 
   faculty  Faculty   @relation(fields: [facultyId], references: [id])
   payments Payment[]

@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useCallback, useMemo } from 'react'
+import { useEffect, useState, useCallback, useMemo, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { apiClient, ApiError } from '@/lib/apiClient'
 import { Button } from '@/components/ui/Button/Button'
@@ -36,6 +36,7 @@ interface EventInfo {
 interface DisputeInfo {
   id: string
   status: string
+  reason?: string
 }
 
 interface AttendanceRecord {
@@ -46,6 +47,7 @@ interface AttendanceRecord {
   scannedAt: string | null
   scanMethod: 'qr_scan' | 'manual' | null
   scannerDeviceId: string | null
+  notes?: string | null
   createdAt: string
   updatedAt: string
   student: StudentInfo
@@ -139,6 +141,9 @@ export default function AdminAttendancePage() {
 
   const [deleteTarget, setDeleteTarget] = useState<AttendanceRecord | null>(null)
   const [deleting, setDeleting] = useState(false)
+
+  const [disputeResolving, setDisputeResolving] = useState(false)
+  const [disputeNotes, setDisputeNotes] = useState('')
 
   const [addOpen, setAddOpen] = useState(false)
   const [addStudentId, setAddStudentId] = useState('')
@@ -286,6 +291,7 @@ export default function AdminAttendancePage() {
 
   useEffect(() => {
     fetchRecords()
+    return () => { if (searchTimerRef.current) clearTimeout(searchTimerRef.current) }
   }, [fetchRecords])
 
   useEffect(() => {
@@ -320,7 +326,10 @@ export default function AdminAttendancePage() {
     setDetailRecord(record)
     setDetailEditStatus(record.status)
     setDetailEditReason('')
+    setDisputeNotes('')
   }, [])
+
+  const handleCloseDetail = useCallback(() => setDetailRecord(null), [])
 
   const handleDetailSave = useCallback(async () => {
     if (!detailRecord) return
@@ -339,11 +348,7 @@ export default function AdminAttendancePage() {
       setDetailRecord(null)
       fetchRecords()
     } catch (err) {
-      if (err instanceof ApiError) {
-        toast({ message: err.message, variant: 'error' })
-      } else {
-        toast({ message: 'Failed to update record', variant: 'error' })
-      }
+      toast({ message: err instanceof Error ? err.message : 'Failed to update record', variant: 'error' })
     } finally {
       setDetailSaving(false)
     }
@@ -362,15 +367,30 @@ export default function AdminAttendancePage() {
       setDetailRecord(null)
       fetchRecords()
     } catch (err) {
-      if (err instanceof ApiError) {
-        toast({ message: err.message, variant: 'error' })
-      } else {
-        toast({ message: 'Failed to delete record', variant: 'error' })
-      }
+      toast({ message: err instanceof Error ? err.message : 'Failed to delete record', variant: 'error' })
     } finally {
       setDeleting(false)
     }
   }, [deleteTarget, toast, fetchRecords])
+
+  const handleResolveDispute = useCallback(async (status: 'approved' | 'rejected') => {
+    if (!detailRecord || !detailRecord.dispute) return
+    setDisputeResolving(true)
+    try {
+      await apiClient(`/disputes/${detailRecord.dispute.id}/resolve`, {
+        method: 'PUT',
+        body: { status, facultyNotes: disputeNotes || undefined },
+        authenticated: true,
+      })
+      toast({ message: `Dispute ${status}`, variant: 'success' })
+      setDetailRecord(null)
+      fetchRecords()
+    } catch (err) {
+      toast({ message: err instanceof Error ? err.message : 'Failed to resolve dispute', variant: 'error' })
+    } finally {
+      setDisputeResolving(false)
+    }
+  }, [detailRecord, disputeNotes, toast, fetchRecords])
 
   const handleBulkUpdate = useCallback(async (status: AttendanceStatus) => {
     if (selectedIds.size === 0) return
@@ -442,9 +462,13 @@ export default function AdminAttendancePage() {
     setCurrentPage(1)
   }, [])
 
+  const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const handleSearchChange = useCallback((q: string) => {
-    setSearchQuery(q)
-    setCurrentPage(1)
+    if (searchTimerRef.current) clearTimeout(searchTimerRef.current)
+    searchTimerRef.current = setTimeout(() => {
+      setSearchQuery(q)
+      setCurrentPage(1)
+    }, 250)
   }, [])
 
   const studentOptions: SelectOption[] = useMemo(
@@ -480,7 +504,7 @@ export default function AdminAttendancePage() {
 
       <div className={styles.filterBar}>
         <SearchBar
-          value={searchQuery}
+          defaultValue={searchQuery}
           onChange={handleSearchChange}
           placeholder="Search by name, ID, event..."
           className={styles.search}
@@ -567,111 +591,163 @@ export default function AdminAttendancePage() {
       {/* Detail / Edit Dialog */}
       <Dialog
         open={!!detailRecord}
-        onClose={() => setDetailRecord(null)}
-        title={detailRecord ? `${detailRecord.student.firstName} ${detailRecord.student.lastName}` : ''}
+        onClose={handleCloseDetail}
+        title={detailRecord ? (
+          <div className={styles.drawerHeader}>
+            <div className={styles.drawerTitle}>{detailRecord.student.firstName} {detailRecord.student.lastName}</div>
+            <div className={styles.drawerSubtitle}>
+              <span>{detailRecord.student.studentId}</span>
+              {detailRecord.student.course ? (
+                <Badge variant="brand">{detailRecord.student.course.code}</Badge>
+              ) : null}
+            </div>
+          </div>
+        ) : undefined}
+        bodyClassName={styles.detailDialogBody}
+        position="right"
         footer={
           <div className={styles.dialogFooter}>
-            <Button variant="outline" onClick={() => setDetailRecord(null)}>
-              Cancel
-            </Button>
-            <Button
-              onClick={handleDetailSave}
-              disabled={detailSaving || !detailRecord || detailEditStatus === detailRecord.status}
-            >
-              {detailSaving ? 'Saving...' : 'Save'}
-            </Button>
+            <div>
+              {detailRecord && (
+                <Button variant="destructive" onClick={() => { setDetailRecord(null); setDeleteTarget(detailRecord) }}>
+                  Delete
+                </Button>
+              )}
+            </div>
+            <div className={styles.dialogFooterRight}>
+              <Button variant="outline" onClick={() => setDetailRecord(null)}>
+                Cancel
+              </Button>
+              <Button
+                onClick={handleDetailSave}
+                disabled={detailSaving || !detailRecord || detailEditStatus === detailRecord.status}
+              >
+                {detailSaving && <span className={styles.spinner} />}
+                {detailSaving ? 'Saving...' : 'Save'}
+              </Button>
+            </div>
           </div>
         }
       >
         {detailRecord && (
-          <div className={styles.detailGrid}>
-            <div className={styles.detailItem}>
-              <span className={styles.detailLabel}>Student</span>
-              <span>{detailRecord.student.firstName} {detailRecord.student.lastName}</span>
+          <div className={styles.detailGridPro}>
+            <div className={styles.detailRowPro}>
+              <span className={styles.detailLabelPro}>Event</span>
+              <span className={styles.detailValuePro}>{detailRecord.event.title}</span>
             </div>
-            <div className={styles.detailItem}>
-              <span className={styles.detailLabel}>Student ID</span>
-              <span>{detailRecord.student.studentId}</span>
+            <div className={styles.detailRowPro}>
+              <span className={styles.detailLabelPro}>Event Course</span>
+              <span className={styles.detailValuePro}>
+                {detailRecord.event.course ? (
+                  <Badge variant="brand">{detailRecord.event.course.code}</Badge>
+                ) : (
+                  <span className={styles.muted}>—</span>
+                )}
+              </span>
             </div>
-            <div className={styles.detailItem}>
-              <span className={styles.detailLabel}>Course</span>
-              {detailRecord.student.course ? (
-                <Badge variant="brand">{detailRecord.student.course.code}</Badge>
-              ) : (
-                <span className={styles.muted}>—</span>
-              )}
+            <div className={styles.detailRowPro}>
+              <span className={styles.detailLabelPro}>Date</span>
+              <span className={styles.detailValuePro}>{formatDate(detailRecord.event.eventDate)}</span>
             </div>
-            <div className={styles.detailItem}>
-              <span className={styles.detailLabel}>Event Course</span>
-              {detailRecord.event.course ? (
-                <Badge variant="brand">{detailRecord.event.course.code}</Badge>
-              ) : (
-                <span className={styles.muted}>—</span>
-              )}
+            <div className={styles.detailRowPro}>
+              <span className={styles.detailLabelPro}>Venue</span>
+              <span className={styles.detailValuePro}>{detailRecord.event.venue}</span>
             </div>
-            <div className={styles.detailItem}>
-              <span className={styles.detailLabel}>Event</span>
-              <span>{detailRecord.event.title}</span>
-            </div>
-            <div className={styles.detailItem}>
-              <span className={styles.detailLabel}>Date</span>
-              <span>{formatDate(detailRecord.event.eventDate)}</span>
-            </div>
-            <div className={styles.detailItem}>
-              <span className={styles.detailLabel}>Venue</span>
-              <span>{detailRecord.event.venue}</span>
-            </div>
-            <div className={styles.detailItem}>
-              <span className={styles.detailLabel}>Mandatory</span>
-              <Badge variant={detailRecord.event.isMandatory ? 'warning' : 'neutral'}>
-                {detailRecord.event.isMandatory ? 'Yes' : 'No'}
-              </Badge>
-            </div>
-            <div className={styles.detailItem}>
-              <span className={styles.detailLabel}>Status</span>
-              <Select
-                value={detailEditStatus}
-                onChange={(e) => setDetailEditStatus(e.target.value as AttendanceStatus)}
-                options={statusSelectOptions}
-                className={styles.statusSelect}
-              />
-            </div>
-            <div className={styles.detailItem}>
-              <span className={styles.detailLabel}>Scanned At</span>
-              <span>{formatDateTime(detailRecord.scannedAt)}</span>
-            </div>
-            <div className={styles.detailItem}>
-              <span className={styles.detailLabel}>Scan Method</span>
-              <span>{detailRecord.scanMethod === 'qr_scan' ? 'QR Scan' : detailRecord.scanMethod === 'manual' ? 'Manual' : '—'}</span>
-            </div>
-            <div className={styles.detailItem}>
-              <span className={styles.detailLabel}>Dispute</span>
-              {detailRecord.dispute ? (
-                <Badge variant={DISPUTE_BADGE[detailRecord.dispute.status] ?? 'neutral'}>
-                  {detailRecord.dispute.status}
+            <div className={styles.detailRowPro}>
+              <span className={styles.detailLabelPro}>Mandatory</span>
+              <span className={styles.detailValuePro}>
+                <Badge variant={detailRecord.event.isMandatory ? 'warning' : 'neutral'}>
+                  {detailRecord.event.isMandatory ? 'Yes' : 'No'}
                 </Badge>
-              ) : (
-                <span className={styles.muted}>None</span>
-              )}
+              </span>
             </div>
-            {detailRecord.dispute && (
-              <div className={styles.detailItemFull}>
-                <span className={styles.detailLabel}>Dispute ID</span>
-                <span>{detailRecord.dispute.id}</span>
+            <div className={styles.detailRowPro}>
+              <span className={styles.detailLabelPro}>Status</span>
+              <span className={styles.detailValuePro}>
+                <Select
+                  value={detailEditStatus}
+                  onChange={(e) => setDetailEditStatus(e.target.value as AttendanceStatus)}
+                  options={statusSelectOptions}
+                  className={styles.statusSelect}
+                />
+              </span>
+            </div>
+            {detailRecord.scannedAt && (
+              <div className={styles.detailRowPro}>
+                <span className={styles.detailLabelPro}>Scanned At</span>
+                <span className={styles.detailValuePro}>{formatDate(detailRecord.scannedAt)}</span>
               </div>
             )}
-            <div className={styles.detailItemFull}>
+            {detailRecord.notes && (
+              <div className={styles.detailRowPro}>
+                <span className={styles.detailLabelPro}>Notes</span>
+                <span className={styles.detailValuePro}>{detailRecord.notes}</span>
+              </div>
+            )}
+            <div className={styles.detailRowPro}>
+              <span className={styles.detailLabelPro}>Dispute</span>
+              <span className={styles.detailValuePro}>
+                {detailRecord.dispute ? (
+                  <Badge variant={DISPUTE_BADGE[detailRecord.dispute.status] ?? 'neutral'}>
+                    {detailRecord.dispute.status}
+                  </Badge>
+                ) : (
+                  <span className={styles.muted}>None</span>
+                )}
+              </span>
+            </div>
+            {detailRecord.dispute && (
+              <>
+                <div className={styles.detailRowPro}>
+                  <span className={styles.detailLabelPro}>Dispute Reason</span>
+                  <span className={styles.detailValuePro}>{detailRecord.dispute.reason || 'None provided'}</span>
+                </div>
+                <div className={styles.detailRowPro}>
+                  <span className={styles.detailLabelPro}>Dispute ID</span>
+                  <span className={styles.detailValuePro}>{detailRecord.dispute.id}</span>
+                </div>
+              </>
+            )}
+            
+            {detailRecord.dispute && detailRecord.dispute.status === 'pending' && (
+              <div style={{ marginTop: 20, padding: 16, border: '1px solid var(--color-border)', borderRadius: 8, background: 'var(--color-neutral-50)' }}>
+                <h4 style={{ marginTop: 0, marginBottom: 12, fontSize: 14, color: 'var(--color-neutral-900)' }}>Resolve Dispute</h4>
+                <div style={{ marginBottom: 16 }}>
+                  <label className={styles.label}>Faculty Notes (optional)</label>
+                  <Input 
+                    value={disputeNotes} 
+                    onChange={(e) => setDisputeNotes(e.target.value)} 
+                    placeholder="Reason for approval/rejection" 
+                  />
+                </div>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <Button 
+                    size="sm" 
+                    onClick={() => handleResolveDispute('approved')}
+                    disabled={disputeResolving}
+                  >
+                    {disputeResolving && <span className={styles.spinner} />}
+                    Approve
+                  </Button>
+                  <Button 
+                    variant="destructive" 
+                    size="sm" 
+                    onClick={() => handleResolveDispute('rejected')}
+                    disabled={disputeResolving}
+                  >
+                    {disputeResolving && <span className={styles.spinner} />}
+                    Reject
+                  </Button>
+                </div>
+              </div>
+            )}
+            <div style={{ marginTop: 12 }}>
               <label className={styles.label}>Reason for change (optional)</label>
               <Input
                 value={detailEditReason}
                 onChange={(e) => setDetailEditReason(e.target.value)}
                 placeholder="e.g. Student was present but marked absent"
               />
-            </div>
-            <div className={styles.detailItemFull}>
-              <Button variant="destructive" size="sm" onClick={() => { setDetailRecord(null); setDeleteTarget(detailRecord) }}>
-                Delete Record
-              </Button>
             </div>
           </div>
         )}
@@ -686,6 +762,7 @@ export default function AdminAttendancePage() {
           <div className={styles.dialogFooter}>
             <Button variant="outline" onClick={() => setDeleteTarget(null)}>Cancel</Button>
             <Button variant="destructive" onClick={confirmDelete} disabled={deleting}>
+              {deleting && <span className={styles.spinner} />}
               {deleting ? 'Deleting...' : 'Delete'}
             </Button>
           </div>
@@ -711,6 +788,7 @@ export default function AdminAttendancePage() {
         open={addOpen}
         onClose={() => setAddOpen(false)}
         title="Add Attendance Record"
+        bodyClassName={styles.addDialogBody}
         footer={
           <div className={styles.dialogFooter}>
             <Button variant="outline" onClick={() => setAddOpen(false)}>Cancel</Button>
@@ -718,6 +796,7 @@ export default function AdminAttendancePage() {
               onClick={handleAddRecord}
               disabled={addSubmitting || !addStudentId || !addEventId}
             >
+              {addSubmitting && <span className={styles.spinner} />}
               {addSubmitting ? 'Creating...' : 'Create'}
             </Button>
           </div>

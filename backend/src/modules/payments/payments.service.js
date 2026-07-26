@@ -1,14 +1,49 @@
 const prisma = require('../../config/database');
-const { NotFoundError } = require('../../utils/errors');
+const { NotFoundError, ConflictError } = require('../../utils/errors');
 
 async function listPaymentMethods() {
-  return prisma.paymentMethod.findMany({ where: { isActive: true }, orderBy: { name: 'asc' } });
+  return prisma.paymentMethod.findMany({ orderBy: { name: 'asc' } });
 }
 
-async function createPaymentMethod(userId, name) {
+async function createPaymentMethod(userId, data) {
   const faculty = await prisma.faculty.findUnique({ where: { userId } });
   if (!faculty) throw new NotFoundError('Faculty profile not found');
-  return prisma.paymentMethod.create({ data: { name, facultyId: faculty.id } });
+  return prisma.paymentMethod.create({
+    data: {
+      name: data.name,
+      accountName: data.accountName || null,
+      accountNumber: data.accountNumber || null,
+      instructions: data.instructions || null,
+      facultyId: faculty.id,
+    },
+  });
+}
+
+async function updatePaymentMethod(id, data) {
+  const method = await prisma.paymentMethod.findUnique({ where: { id } });
+  if (!method) throw new NotFoundError('Payment method not found');
+
+  const updateData = {};
+  if (data.name !== undefined) updateData.name = data.name;
+  if (data.accountName !== undefined) updateData.accountName = data.accountName || null;
+  if (data.accountNumber !== undefined) updateData.accountNumber = data.accountNumber || null;
+  if (data.instructions !== undefined) updateData.instructions = data.instructions || null;
+  if (data.isActive !== undefined) updateData.isActive = data.isActive;
+
+  return prisma.paymentMethod.update({ where: { id }, data: updateData });
+}
+
+async function deletePaymentMethod(id) {
+  const method = await prisma.paymentMethod.findUnique({
+    where: { id },
+    include: { payments: { select: { id: true } } },
+  });
+  if (!method) throw new NotFoundError('Payment method not found');
+  if (method.payments.length > 0) {
+    // Soft-deactivate instead of delete
+    return prisma.paymentMethod.update({ where: { id }, data: { isActive: false } });
+  }
+  await prisma.paymentMethod.delete({ where: { id } });
 }
 
 async function recordPayment(userId, data) {
@@ -55,4 +90,4 @@ async function recordPayment(userId, data) {
   });
 }
 
-module.exports = { listPaymentMethods, createPaymentMethod, recordPayment };
+module.exports = { listPaymentMethods, createPaymentMethod, updatePaymentMethod, deletePaymentMethod, recordPayment };

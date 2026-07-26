@@ -70,38 +70,77 @@
   margin: 0;
 }
 
-.detailDialog {
-  min-width: 600px;
+.drawerHeader {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.drawerTitle {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--color-neutral-900);
+}
+
+.drawerSubtitle {
+  font-size: 14px;
+  color: var(--color-text-muted);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.detailDialogBody {
+  overflow-y: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.detailDialogBody::-webkit-scrollbar {
+  display: none;
 }
 
 .tabContent {
   margin-top: 20px;
 }
 
-.overviewGrid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+.detailGridPro {
+  display: flex;
+  flex-direction: column;
   gap: 16px;
 }
 
-.overviewItem {
+.detailRowPro {
   display: flex;
-  flex-direction: column;
-  gap: 2px;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--color-border);
 }
 
-.overviewLabel {
-  font-size: 12px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+.detailRowPro:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.detailLabelPro {
+  font-size: 14px;
   color: var(--color-text-muted);
+}
+
+.detailValuePro {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-neutral-900);
+  text-align: right;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .attendanceGrid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 16px;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
 }
 
 .attendanceStat {
@@ -110,43 +149,91 @@
   align-items: center;
   padding: 16px;
   border: 1px solid var(--color-border);
-  border-radius: 8px;
-  background: var(--color-surface);
+  border-radius: var(--radius-md);
+  background: var(--color-neutral-50);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 .attendanceValue {
-  font-size: 24px;
+  font-size: 28px;
   font-weight: 700;
+  color: var(--color-neutral-900);
 }
 
 .attendanceLabel {
   font-size: 12px;
-  color: var(--color-text-muted);
+  color: var(--color-text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.05em;
-}
-
-.eventsTable {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-.eventsTable th,
-.eventsTable td {
-  text-align: left;
-  padding: 8px 12px;
-  border-bottom: 1px solid var(--color-border);
-}
-
-.eventsTable th {
-  font-size: 12px;
   font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+}
+
+.eventCardList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.eventCard {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.eventCard:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  transform: translateY(-1px);
+}
+
+.eventCardLeft {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.eventCardTitle {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--color-neutral-900);
+}
+
+.eventCardMeta {
+  font-size: 13px;
   color: var(--color-text-muted);
+}
+
+.eventCardRight {
+  display: flex;
+  align-items: center;
 }
 
 .noData {
   color: var(--color-text-muted);
   font-size: 14px;
+  text-align: center;
+  padding: 24px;
+  background: var(--color-neutral-50);
+  border-radius: var(--radius-md);
+  border: 1px dashed var(--color-border);
+}
+
+.spinner {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: btnSpin 0.6s linear infinite;
+  vertical-align: middle;
+}
+
+@keyframes btnSpin {
+  to { transform: rotate(360deg); }
 }

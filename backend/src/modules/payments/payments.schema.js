@@ -13,7 +13,20 @@ const createPaymentSchema = z.object({
 const createPaymentMethodSchema = z.object({
   body: z.object({
     name: z.string().min(1).max(50),
+    accountName: z.string().max(100).optional(),
+    accountNumber: z.string().max(100).optional(),
+    instructions: z.string().max(255).optional(),
   }),
 });
 
-module.exports = { createPaymentSchema, createPaymentMethodSchema };
+const updatePaymentMethodSchema = z.object({
+  body: z.object({
+    name: z.string().min(1).max(50).optional(),
+    accountName: z.string().max(100).nullable().optional(),
+    accountNumber: z.string().max(100).nullable().optional(),
+    instructions: z.string().max(255).nullable().optional(),
+    isActive: z.boolean().optional(),
+  }),
+});
+
+module.exports = { createPaymentSchema, createPaymentMethodSchema, updatePaymentMethodSchema };

@@ -1,0 +1,348 @@
+.page {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.title {
+  font-size: 24px;
+  font-weight: 700;
+  margin: 0;
+}
+
+.headerRight {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.filterBar {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: flex-end;
+}
+
+.search {
+  max-width: 280px;
+}
+
+.filterSelect {
+  width: 200px;
+}
+
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+
+.muted {
+  color: var(--color-text-muted);
+  font-size: 14px;
+}
+
+.emptyState {
+  text-align: center;
+  padding: 40px 16px;
+  color: var(--color-text-muted);
+}
+
+.actionBtns {
+  display: flex;
+  gap: 4px;
+}
+
+.dialogFooter {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.dialogFooterRight {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.detailTabs {
+  margin-bottom: 16px;
+}
+
+.detailGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.detailItem {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.detailItemFull {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.detailLabel {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-muted);
+}
+
+.drawerHeader {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.drawerTitle {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--color-neutral-900);
+}
+
+.drawerSubtitle {
+  font-size: 14px;
+  color: var(--color-text-muted);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.drawerStats {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.drawerStatCard {
+  flex: 1;
+  background: var(--color-neutral-50);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.drawerStatLabel {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.drawerStatValue {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--color-neutral-900);
+  line-height: 1;
+}
+.drawerStatValue.success { color: var(--color-status-success); }
+.drawerStatValue.danger { color: var(--color-status-danger); }
+
+.detailGridPro {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.detailRowPro {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--color-border);
+}
+.detailRowPro:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.detailLabelPro {
+  font-size: 14px;
+  color: var(--color-text-muted);
+}
+
+.detailValuePro {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-neutral-900);
+  text-align: right;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.paymentsSection {
+  margin-top: 16px;
+}
+
+.paymentsTitle {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-neutral-900);
+  margin-bottom: 8px;
+}
+
+.paymentRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--color-border);
+  font-size: 14px;
+}
+
+.paymentRow:last-child {
+  border-bottom: none;
+}
+
+.paymentAmount {
+  font-weight: 600;
+}
+
+.paymentMeta {
+  color: var(--color-text-muted);
+  font-size: 13px;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+}
+
+.formError {
+  color: var(--color-status-danger);
+  font-size: 13px;
+  padding: 8px 12px;
+  background: var(--color-danger-bg, rgba(220, 38, 38, 0.08));
+  border-radius: 6px;
+}
+
+.deleteText {
+  font-size: 15px;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.payForm {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.payRow {
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+}
+
+.payRow .field {
+  flex: 1;
+}
+
+.methodRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--color-border);
+  font-size: 14px;
+}
+
+.methodRow:last-child {
+  border-bottom: none;
+}
+
+.methodName {
+  font-weight: 500;
+}
+
+.inactiveLabel {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  margin-left: 8px;
+}
+
+.spinner {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: btnSpin 0.6s linear infinite;
+  vertical-align: middle;
+}
+
+@keyframes btnSpin {
+  to { transform: rotate(360deg); }
+}
+
+.editInline {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.editInlineInput {
+  width: 120px;
+}
+
+.detailDialogBody {
+  overflow-y: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.detailDialogBody::-webkit-scrollbar {
+  display: none;
+}
+
+.addDialogBody {
+  overflow-y: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.addDialogBody::-webkit-scrollbar {
+  display: none;
+}
+
+.manageMethodsBody {
+  overflow-y: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.manageMethodsBody::-webkit-scrollbar {
+  display: none;
+}

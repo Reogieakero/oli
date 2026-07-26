@@ -66,7 +66,7 @@ async function listRecords(page = 1, limit = 20, filters = {}) {
           },
         },
         dispute: {
-          select: { id: true, status: true },
+          select: { id: true, status: true, reason: true },
         },
       },
     }),

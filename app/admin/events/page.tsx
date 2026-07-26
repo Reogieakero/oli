@@ -655,6 +655,7 @@ export default function AdminEventsPage() {
                 Back / Edit
               </Button>
               <Button onClick={handleConfirmSubmit} disabled={formSubmitting}>
+                {formSubmitting && <span className={styles.spinner} />}
                 {formSubmitting ? 'Saving...' : editingEvent ? 'Confirm & Save Changes' : 'Confirm & Publish'}
               </Button>
             </div>
@@ -889,6 +890,7 @@ export default function AdminEventsPage() {
           <div className={styles.dialogFooter}>
             <Button variant="outline" onClick={() => setDeleteTarget(null)}>Cancel</Button>
             <Button variant="destructive" onClick={confirmDelete} disabled={deleting}>
+              {deleting && <span className={styles.spinner} />}
               {deleting ? 'Deleting...' : 'Delete'}
             </Button>
           </div>
@@ -910,9 +912,41 @@ export default function AdminEventsPage() {
       <Dialog
         open={!!detailEvent}
         onClose={() => { setDetailEventId(null); setDetailTab('overview') }}
-        title={detailEvent ? detailEvent.title : ''}
+        title={detailEvent ? (
+          <div className={styles.drawerHeader}>
+            <div className={styles.drawerTitle}>{detailEvent.title}</div>
+            <div className={styles.drawerSubtitle}>
+              {detailEvent.course ? (
+                <Badge variant="brand">{detailEvent.course.code}</Badge>
+              ) : null}
+              <span>{detailEvent.targetYearLevel ? `Year ${detailEvent.targetYearLevel}` : 'All Years'}</span>
+            </div>
+          </div>
+        ) : undefined}
+        position="right"
         className={styles.detailDialog}
         bodyClassName={styles.detailDialogBody}
+        footer={
+          <div className={styles.dialogFooter}>
+            <div>
+              {detailEvent && (
+                <Button variant="destructive" onClick={() => { setDeleteTarget(detailEvent); setDetailEventId(null); }}>
+                  Delete
+                </Button>
+              )}
+            </div>
+            <div className={styles.dialogFooterRight}>
+              {detailEvent && (
+                <Button variant="outline" onClick={() => { openEdit(detailEvent); setDetailEventId(null); }}>
+                  Edit Details
+                </Button>
+              )}
+              <Button variant="outline" onClick={() => { setDetailEventId(null); setDetailTab('overview') }}>
+                Close
+              </Button>
+            </div>
+          </div>
+        }
       >
         {detailEvent && (
           <>
@@ -931,73 +965,69 @@ export default function AdminEventsPage() {
             <Tabs tabs={DETAIL_TABS} activeId={detailTab} onChange={setDetailTab} />
             <div className={styles.tabContent}>
               {detailTab === 'overview' && (
-                <div className={styles.detailGrid}>
-                  <div className={styles.detailItem}>
-                    <span className={styles.detailLabel}>Status</span>
-                    <Badge variant={STATUS_BADGE[getStatus(detailEvent.eventDate)]}>
-                      {getStatus(detailEvent.eventDate)}
-                    </Badge>
+                <div className={styles.detailGridPro}>
+                  <div className={styles.detailRowPro}>
+                    <span className={styles.detailLabelPro}>Status</span>
+                    <span className={styles.detailValuePro}>
+                      <Badge variant={STATUS_BADGE[getStatus(detailEvent.eventDate)]}>
+                        {getStatus(detailEvent.eventDate)}
+                      </Badge>
+                    </span>
                   </div>
-                  <div className={styles.detailItem}>
-                    <span className={styles.detailLabel}>Active</span>
-                    <Badge variant={detailEvent.isActive ? 'success' : 'danger'}>
-                      {detailEvent.isActive ? 'Yes' : 'No'}
-                    </Badge>
+                  <div className={styles.detailRowPro}>
+                    <span className={styles.detailLabelPro}>Active</span>
+                    <span className={styles.detailValuePro}>
+                      <Badge variant={detailEvent.isActive ? 'success' : 'danger'}>
+                        {detailEvent.isActive ? 'Yes' : 'No'}
+                      </Badge>
+                    </span>
                   </div>
-                  <div className={styles.detailItem}>
-                    <span className={styles.detailLabel}>Date</span>
-                    <span>{new Date(detailEvent.eventDate).toLocaleDateString()}</span>
+                  <div className={styles.detailRowPro}>
+                    <span className={styles.detailLabelPro}>Date</span>
+                    <span className={styles.detailValuePro}>{new Date(detailEvent.eventDate).toLocaleDateString()}</span>
                   </div>
-                  <div className={styles.detailItem}>
-                    <span className={styles.detailLabel}>Time</span>
-                    <span>{formatTime(detailEvent.startTime)} – {formatTime(detailEvent.endTime)}</span>
+                  <div className={styles.detailRowPro}>
+                    <span className={styles.detailLabelPro}>Time</span>
+                    <span className={styles.detailValuePro}>{formatTime(detailEvent.startTime)} – {formatTime(detailEvent.endTime)}</span>
                   </div>
-                  <div className={styles.detailItem}>
-                    <span className={styles.detailLabel}>Venue</span>
-                    <span>{detailEvent.venue}</span>
+                  <div className={styles.detailRowPro}>
+                    <span className={styles.detailLabelPro}>Venue</span>
+                    <span className={styles.detailValuePro}>{detailEvent.venue}</span>
                   </div>
-                  <div className={styles.detailItem}>
-                    <span className={styles.detailLabel}>Course</span>
-                    {detailEvent.course ? (
-                      <Badge variant="brand">{detailEvent.course.code}</Badge>
-                    ) : (
-                      <span className={styles.muted}>—</span>
-                    )}
+                  <div className={styles.detailRowPro}>
+                    <span className={styles.detailLabelPro}>Mandatory</span>
+                    <span className={styles.detailValuePro}>
+                      <Badge variant={detailEvent.isMandatory ? 'warning' : 'neutral'}>
+                        {detailEvent.isMandatory ? 'Yes' : 'No'}
+                      </Badge>
+                    </span>
                   </div>
-                  <div className={styles.detailItem}>
-                    <span className={styles.detailLabel}>Mandatory</span>
-                    <Badge variant={detailEvent.isMandatory ? 'warning' : 'neutral'}>
-                      {detailEvent.isMandatory ? 'Yes' : 'No'}
-                    </Badge>
+                  <div className={styles.detailRowPro}>
+                    <span className={styles.detailLabelPro}>Organizer</span>
+                    <span className={styles.detailValuePro}>{detailEvent.faculty?.fullName ?? '—'}</span>
                   </div>
-                  <div className={styles.detailItem}>
-                    <span className={styles.detailLabel}>Target Year</span>
-                    <span>{detailEvent.targetYearLevel ? `Year ${detailEvent.targetYearLevel}` : 'All'}</span>
+                  <div className={styles.detailRowPro}>
+                    <span className={styles.detailLabelPro}>Passcode</span>
+                    <span className={styles.detailValuePro}>
+                      <code className={styles.passcode}>{detailEvent.programPasscode}</code>
+                    </span>
                   </div>
-                  <div className={styles.detailItem}>
-                    <span className={styles.detailLabel}>Organizer</span>
-                    <span>{detailEvent.faculty?.fullName ?? '—'}</span>
+                  <div className={styles.detailRowPro}>
+                    <span className={styles.detailLabelPro}>Passcode Expiry</span>
+                    <span className={styles.detailValuePro}>{detailEvent.passcodeExpiresAt ? new Date(detailEvent.passcodeExpiresAt).toLocaleString() : 'Never'}</span>
                   </div>
-                  <div className={styles.detailItem}>
-                    <span className={styles.detailLabel}>Passcode</span>
-                    <code className={styles.passcode}>{detailEvent.programPasscode}</code>
+                  <div className={styles.detailRowPro}>
+                    <span className={styles.detailLabelPro}>Late Cutoff</span>
+                    <span className={styles.detailValuePro}>{detailEvent.lateCutoffTime} min</span>
                   </div>
-                  <div className={styles.detailItem}>
-                    <span className={styles.detailLabel}>Passcode Expiry</span>
-                    <span>{detailEvent.passcodeExpiresAt ? new Date(detailEvent.passcodeExpiresAt).toLocaleString() : 'Never'}</span>
-                  </div>
-                  <div className={styles.detailItem}>
-                    <span className={styles.detailLabel}>Late Cutoff</span>
-                    <span>{detailEvent.lateCutoffTime} min</span>
-                  </div>
-                  <div className={styles.detailItem}>
-                    <span className={styles.detailLabel}>Created</span>
-                    <span>{new Date(detailEvent.createdAt).toLocaleDateString()}</span>
+                  <div className={styles.detailRowPro}>
+                    <span className={styles.detailLabelPro}>Created</span>
+                    <span className={styles.detailValuePro}>{new Date(detailEvent.createdAt).toLocaleDateString()}</span>
                   </div>
                   {detailEvent.description && (
-                    <div className={styles.detailItemFull}>
-                      <span className={styles.detailLabel}>Description</span>
-                      <p className={styles.detailDescription}>{detailEvent.description}</p>
+                    <div className={styles.detailRowPro}>
+                      <span className={styles.detailLabelPro}>Description</span>
+                      <span className={styles.detailValuePro}>{detailEvent.description}</span>
                     </div>
                   )}
                 </div>

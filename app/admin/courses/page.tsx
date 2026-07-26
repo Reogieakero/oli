@@ -375,6 +375,7 @@ export default function AdminCoursesPage() {
               onClick={handleFormSubmit}
               disabled={formSubmitting || !formName.trim() || (!editingCourse && !formCode.trim())}
             >
+              {formSubmitting && <span className={styles.spinner} />}
               {formSubmitting ? 'Saving...' : editingCourse ? 'Update' : 'Create'}
             </Button>
           </div>
@@ -419,6 +420,7 @@ export default function AdminCoursesPage() {
               onClick={confirmDelete}
               disabled={deleting}
             >
+              {deleting && <span className={styles.spinner} />}
               {deleting ? 'Deleting...' : 'Delete'}
             </Button>
           </div>
@@ -434,8 +436,14 @@ export default function AdminCoursesPage() {
       <Dialog
         open={!!detailCourse}
         onClose={() => setDetailCourse(null)}
-        title={detailCourse ? `${detailCourse.code} — ${detailCourse.name}` : ''}
-        className={styles.detailDialog}
+        title={detailCourse ? (
+          <div className={styles.drawerHeader}>
+            <div className={styles.drawerTitle}>{detailCourse.code}</div>
+            <div className={styles.drawerSubtitle}>{detailCourse.name}</div>
+          </div>
+        ) : undefined}
+        bodyClassName={styles.detailDialogBody}
+        position="right"
       >
         {detailCourse && (
           <>
@@ -443,26 +451,28 @@ export default function AdminCoursesPage() {
 
             <div className={styles.tabContent}>
               {detailTab === 'overview' && (
-                <div className={styles.overviewGrid}>
-                  <div className={styles.overviewItem}>
-                    <span className={styles.overviewLabel}>Code</span>
-                    <Badge variant="brand">{detailCourse.code}</Badge>
+                <div className={styles.detailGridPro}>
+                  <div className={styles.detailRowPro}>
+                    <span className={styles.detailLabelPro}>Code</span>
+                    <span className={styles.detailValuePro}>
+                      <Badge variant="brand">{detailCourse.code}</Badge>
+                    </span>
                   </div>
-                  <div className={styles.overviewItem}>
-                    <span className={styles.overviewLabel}>Name</span>
-                    <span>{detailCourse.name}</span>
+                  <div className={styles.detailRowPro}>
+                    <span className={styles.detailLabelPro}>Name</span>
+                    <span className={styles.detailValuePro}>{detailCourse.name}</span>
                   </div>
-                  <div className={styles.overviewItem}>
-                    <span className={styles.overviewLabel}>Events</span>
-                    <span>{detailCourse._count?.events ?? 0}</span>
+                  <div className={styles.detailRowPro}>
+                    <span className={styles.detailLabelPro}>Events</span>
+                    <span className={styles.detailValuePro}>{detailCourse._count?.events ?? 0}</span>
                   </div>
-                  <div className={styles.overviewItem}>
-                    <span className={styles.overviewLabel}>Students</span>
-                    <span>{detailCourse._count?.students ?? 0}</span>
+                  <div className={styles.detailRowPro}>
+                    <span className={styles.detailLabelPro}>Students</span>
+                    <span className={styles.detailValuePro}>{detailCourse._count?.students ?? 0}</span>
                   </div>
-                  <div className={styles.overviewItem}>
-                    <span className={styles.overviewLabel}>Created</span>
-                    <span>{new Date(detailCourse.createdAt).toLocaleDateString()}</span>
+                  <div className={styles.detailRowPro}>
+                    <span className={styles.detailLabelPro}>Created</span>
+                    <span className={styles.detailValuePro}>{new Date(detailCourse.createdAt).toLocaleDateString()}</span>
                   </div>
                 </div>
               )}
@@ -509,26 +519,27 @@ export default function AdminCoursesPage() {
               {detailTab === 'events' && (
                 <>
                   {detailEventsLoading ? (
-                    <p className={styles.noData}>Loading events...</p>
+                    <div style={{ textAlign: 'center', padding: '24px 0' }}>
+                      <span className={styles.spinner} />
+                    </div>
                   ) : detailEvents.length === 0 ? (
-                    <p className={styles.noData}>No events for this course.</p>
+                    <div className={styles.noData}>No events scheduled for this course.</div>
                   ) : (
-                    <table className={styles.eventsTable}>
-                      <thead>
-                        <tr>
-                          <th>Title</th>
-                          <th>Date</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {detailEvents.map((ev) => (
-                          <tr key={ev.id}>
-                            <td>{ev.title}</td>
-                            <td>{new Date(ev.eventDate).toLocaleDateString()}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                    <div className={styles.eventCardList}>
+                      {detailEvents.map((evt) => (
+                        <div key={evt.id} className={styles.eventCard}>
+                          <div className={styles.eventCardLeft}>
+                            <div className={styles.eventCardTitle}>{evt.title}</div>
+                            <div className={styles.eventCardMeta}>
+                              {formatDate(evt.eventDate)} at {formatTime(evt.startTime)} · {evt.venue}
+                            </div>
+                          </div>
+                          <div className={styles.eventCardRight}>
+                            {evt.isMandatory && <Badge variant="warning">Mandatory</Badge>}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   )}
                 </>
               )}

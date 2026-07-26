@@ -14,18 +14,19 @@ import styles from './Dialog.module.css'
 interface DialogProps {
   open: boolean
   onClose: () => void
-  title?: string
+  title?: ReactNode
   children?: ReactNode
   footer?: ReactNode
   className?: string
   bodyClassName?: string
   fullscreen?: boolean
+  position?: 'center' | 'right'
 }
 
 const FOCUSABLE_SELECTOR =
   'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])'
 
-function Dialog({ open, onClose, title, children, footer, className, bodyClassName, fullscreen }: DialogProps) {
+function Dialog({ open, onClose, title, children, footer, className, bodyClassName, fullscreen, position = 'center' }: DialogProps) {
   const dialogRef = useRef<HTMLDivElement>(null)
   const previousFocusRef = useRef<HTMLElement | null>(null)
 
@@ -89,22 +90,31 @@ function Dialog({ open, onClose, title, children, footer, className, bodyClassNa
 
   if (!open) return null
 
-  const dialogContent = (
+    const dialogContent = (
       <div
-        className={[styles.overlay, fullscreen ? styles.overlayFullscreen : null].filter(Boolean).join(' ')}
+        className={[
+          styles.overlay, 
+          fullscreen ? styles.overlayFullscreen : null,
+          position === 'right' ? styles.overlayRight : null
+        ].filter(Boolean).join(' ')}
         onClick={handleOverlayClick}
         role="presentation"
       >
         <div
           ref={dialogRef}
-          className={[styles.dialog, fullscreen ? styles.dialogFullscreen : null, className].filter(Boolean).join(' ')}
+          className={[
+            styles.dialog, 
+            fullscreen ? styles.dialogFullscreen : null, 
+            position === 'right' ? styles.dialogRight : null,
+            className
+          ].filter(Boolean).join(' ')}
           role="dialog"
         aria-modal="true"
-        aria-label={title}
+        aria-label={typeof title === 'string' ? title : undefined}
         onKeyDown={handleKeyDown}
       >
         <div className={styles.header}>
-          {title && <h2 className={styles.title}>{title}</h2>}
+          {title && (typeof title === 'string' ? <h2 className={styles.title}>{title}</h2> : title)}
           <button
             className={styles.closeBtn}
             onClick={onClose}
