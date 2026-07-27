@@ -20,4 +20,23 @@ const updateSanctionRuleSchema = z.object({
   }),
 });
 
-module.exports = { createSanctionRuleSchema, updateSanctionRuleSchema };
+const createSanctionSchema = z.object({
+  body: z.object({
+    studentId: z.string().uuid(),
+    sanctionRuleId: z.string().uuid(),
+    notes: z.string().optional(),
+  }),
+});
+
+const updateSanctionSchema = z.object({
+  body: z.object({
+    status: z.enum(['active', 'superseded', 'lifted']).optional(),
+    notes: z.string().nullable().optional(),
+    reason: z.string().optional(),
+  }),
+  params: z.object({
+    id: z.string().uuid(),
+  }),
+});
+
+module.exports = { createSanctionRuleSchema, updateSanctionRuleSchema, createSanctionSchema, updateSanctionSchema };

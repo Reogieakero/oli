@@ -36,6 +36,11 @@ enum SanctionStatus {
   lifted
 }
 
+enum SanctionRuleType {
+  absence
+  late
+}
+
 enum ScanMethod {
   qr_scan
   manual
@@ -93,6 +98,8 @@ model Faculty {
   paymentMethods PaymentMethod[]
   payments       Payment[]
   changes        AttendanceRecordChange[]
+  sanctionsIssued  Sanction[]               @relation("SanctionIssuer")
+  sanctionChanges  SanctionStatusChange[]
 
   @@map("faculty")
 }
@@ -196,16 +203,18 @@ model AttendanceRecord {
 }
 
 model SanctionRule {
-  id               String   @id @default(uuid()) @db.Uuid
-  absenceThreshold Int      @unique @map("absence_threshold") @db.SmallInt
-  sanctionLevel    String   @map("sanction_level") @db.VarChar(50)
+  id               String           @id @default(uuid()) @db.Uuid
+  type             SanctionRuleType @default(absence) @map("type")
+  absenceThreshold Int              @map("absence_threshold") @db.SmallInt
+  sanctionLevel    String           @map("sanction_level") @db.VarChar(50)
   description      String?
-  isActive         Boolean  @default(true) @map("is_active")
-  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamp(6)
-  updatedAt        DateTime @updatedAt @map("updated_at") @db.Timestamp(6)
+  isActive         Boolean          @default(true) @map("is_active")
+  createdAt        DateTime         @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt        DateTime         @updatedAt @map("updated_at") @db.Timestamp(6)
 
   sanctions Sanction[]
 
+  @@unique([type, absenceThreshold], name: "idx_sanction_rule_type_threshold")
   @@map("sanction_rules")
 }
 
@@ -214,16 +223,36 @@ model Sanction {
   studentId      String         @map("student_id") @db.Uuid
   sanctionRuleId String         @map("sanction_rule_id") @db.Uuid
   status         SanctionStatus @default(active)
+  issuedById     String?        @map("issued_by_id") @db.Uuid
   triggeredAt    DateTime       @default(now()) @map("triggered_at") @db.Timestamp(6)
   resolvedAt     DateTime?      @map("resolved_at") @db.Timestamp(6)
   notes          String?
   createdAt      DateTime       @default(now()) @map("created_at") @db.Timestamp(6)
 
-  student      Student      @relation(fields: [studentId], references: [id])
-  sanctionRule SanctionRule @relation(fields: [sanctionRuleId], references: [id])
+  student       Student                 @relation(fields: [studentId], references: [id])
+  sanctionRule  SanctionRule            @relation(fields: [sanctionRuleId], references: [id])
+  issuedBy      Faculty?                @relation("SanctionIssuer", fields: [issuedById], references: [id])
+  statusChanges SanctionStatusChange[]
 
   @@index([studentId, status], name: "idx_sanctions_student")
   @@map("sanctions")
+}
+
+model SanctionStatusChange {
+  id          String         @id @default(uuid()) @db.Uuid
+  sanctionId  String         @map("sanction_id") @db.Uuid
+  changedById String         @map("changed_by_id") @db.Uuid
+  oldStatus   SanctionStatus? @map("old_status")
+  newStatus   SanctionStatus @map("new_status")
+  reason      String?        @db.VarChar(500)
+  createdAt   DateTime       @default(now()) @map("created_at") @db.Timestamp(6)
+
+  sanction Sanction @relation(fields: [sanctionId], references: [id], onDelete: Cascade)
+  changedBy Faculty @relation(fields: [changedById], references: [id])
+
+  @@index([sanctionId], name: "idx_sanction_changes_record")
+  @@index([changedById], name: "idx_sanction_changes_user")
+  @@map("sanction_status_changes")
 }
 
 model Balance {
