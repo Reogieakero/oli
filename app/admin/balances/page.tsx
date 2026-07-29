@@ -222,14 +222,14 @@ export default function AdminBalancesPage() {
 
   const fetchCourses = useCallback(async () => {
     try {
-      const result = await apiClient<{ data: CourseOption[] }>('/courses', { authenticated: true })
+      const result = await apiClient<{ data: CourseOption[] }>('/courses?limit=20', { authenticated: true })
       setCourses(result.data)
     } catch { /* ignore */ }
   }, [])
 
   const fetchStudents = useCallback(async () => {
     try {
-      const result = await apiClient<{ data: StudentOption[] }>('/students', { authenticated: true })
+      const result = await apiClient<{ data: StudentOption[] }>('/students?limit=200', { authenticated: true })
       setStudents(result.data)
     } catch { /* ignore */ }
   }, [])

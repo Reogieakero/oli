@@ -1,16 +1,25 @@
 const prisma = require('../../config/database');
 const { NotFoundError, ConflictError } = require('../../utils/errors');
 
-async function listCourses(page = 1, limit = 20) {
+async function listCourses(page = 1, limit = 20, search) {
   const skip = (page - 1) * limit;
+  const where = search
+    ? {
+        OR: [
+          { code: { contains: search, mode: 'insensitive' } },
+          { name: { contains: search, mode: 'insensitive' } },
+        ],
+      }
+    : {};
   const [data, total] = await Promise.all([
     prisma.course.findMany({
+      where,
       skip,
       take: limit,
       orderBy: { code: 'asc' },
       include: { _count: { select: { events: true, students: true } } },
     }),
-    prisma.course.count(),
+    prisma.course.count({ where }),
   ]);
   return { data, total, page, limit };
 }

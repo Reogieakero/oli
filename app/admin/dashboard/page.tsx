@@ -149,7 +149,7 @@ export default function AdminDashboardPage() {
 
   const fetchEventAttendance = useCallback(async () => {
     try {
-      const result = await apiClient<{ data: EventAttendanceData[] }>('/reports/events?limit=200', {
+      const result = await apiClient<{ data: EventAttendanceData[] }>('/reports/events?limit=20', {
         authenticated: true,
       })
       setEventAttendance(result.data)

@@ -2,9 +2,7 @@ const auditFileService = require('./audit-files.service');
 
 async function list(req, res, next) {
   try {
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 20;
-    const result = await auditFileService.listAuditFiles(page, limit);
+    const result = await auditFileService.listAuditFiles(req.query);
     res.json(result);
   } catch (err) {
     next(err);
@@ -24,9 +22,11 @@ async function upload(req, res, next) {
   try {
     if (!req.file) return res.status(400).json({ error: { message: 'No file provided', statusCode: 400 } });
 
-    const file = await auditFileService.uploadAuditFile(req.user.sub, {
+    const file = await auditFileService.uploadAuditFile(req.user.sub, req.user.email, {
       title: req.body.title,
       description: req.body.description,
+      category: req.body.category,
+      courseId: req.body.courseId,
       file: req.file,
     });
     res.status(201).json(file);

@@ -7,14 +7,15 @@ const ATTACHMENT_BUCKET = 'announcement-attachments';
 async function ensureBucket() {
   const { data: buckets } = await supabase.storage.listBuckets();
   if (!buckets?.find(b => b.name === ATTACHMENT_BUCKET)) {
-    await supabase.storage.createBucket(ATTACHMENT_BUCKET, {
-      public: false,
-    });
+    await supabase.storage.createBucket(ATTACHMENT_BUCKET, { public: false });
   }
 }
 
-async function listAnnouncements(user, page = 1, limit = 20) {
+async function listAnnouncements(user, query = {}) {
+  const page = parseInt(query.page) || 1;
+  const limit = parseInt(query.limit) || 20;
   const skip = (page - 1) * limit;
+  const { status, courseId, search, startDate, endDate, sortBy, sortOrder } = query;
 
   let where = {};
 
@@ -31,13 +32,30 @@ async function listAnnouncements(user, page = 1, limit = 20) {
     }
   }
 
+  if (status) where.status = status;
+  if (courseId) where.courseId = courseId;
+  if (search) where.title = { contains: search, mode: 'insensitive' };
+  if (startDate || endDate) {
+    where.createdAt = {};
+    if (startDate) where.createdAt.gte = new Date(startDate);
+    if (endDate) where.createdAt.lte = new Date(endDate + 'T23:59:59.999Z');
+  }
+
+  const orderBy = {};
+  orderBy[sortBy || 'createdAt'] = sortOrder || 'desc';
+
   const [data, total] = await Promise.all([
     prisma.announcement.findMany({
       where,
       skip,
       take: limit,
-      orderBy: { createdAt: 'desc' },
-      include: { attachments: true, course: true, faculty: { select: { fullName: true } } },
+      orderBy,
+      include: {
+        attachments: true,
+        course: { select: { id: true, code: true, name: true } },
+        faculty: { select: { fullName: true } },
+        _count: { select: { reads: true } },
+      },
     }),
     prisma.announcement.count({ where }),
   ]);
@@ -48,17 +66,35 @@ async function listAnnouncements(user, page = 1, limit = 20) {
 async function getAnnouncement(id) {
   const announcement = await prisma.announcement.findUnique({
     where: { id },
-    include: { attachments: true, course: true, faculty: { select: { fullName: true } } },
+    include: {
+      attachments: true,
+      course: { select: { id: true, code: true, name: true } },
+      faculty: { select: { fullName: true } },
+      _count: { select: { reads: true } },
+    },
   });
   if (!announcement) throw new NotFoundError('Announcement not found');
   return announcement;
 }
 
-async function createAnnouncement(userId, data, files = []) {
+async function createAnnouncement(userId, userEmail, data, files = []) {
   await ensureBucket();
 
-  const faculty = await prisma.faculty.findUnique({ where: { userId } });
-  if (!faculty) throw new NotFoundError('Faculty profile not found');
+  let faculty = await prisma.faculty.findUnique({ where: { userId } });
+  if (!faculty) {
+    const user = await prisma.user.findUnique({ where: { email: userEmail } });
+    if (!user) throw new NotFoundError('User not found');
+    faculty = await prisma.faculty.findUnique({ where: { userId: user.id } });
+    if (!faculty) {
+      faculty = await prisma.faculty.create({
+        data: { userId: user.id, fullName: user.email },
+      });
+    }
+  }
+
+  const status = data.status || 'draft';
+  const publishAt = data.publishAt ? new Date(data.publishAt) : null;
+  const expiresAt = data.expiresAt ? new Date(data.expiresAt) : null;
 
   const announcement = await prisma.$transaction(async (tx) => {
     const ann = await tx.announcement.create({
@@ -69,6 +105,9 @@ async function createAnnouncement(userId, data, files = []) {
         courseId: data.courseId || null,
         targetYearLevel: data.targetYearLevel || null,
         isGeneral: data.isGeneral || false,
+        status,
+        publishAt,
+        expiresAt,
       },
     });
 
@@ -95,7 +134,11 @@ async function createAnnouncement(userId, data, files = []) {
 
     return tx.announcement.findUnique({
       where: { id: ann.id },
-      include: { attachments: true },
+      include: {
+        attachments: true,
+        course: { select: { id: true, code: true, name: true } },
+        faculty: { select: { fullName: true } },
+      },
     });
   });
 
@@ -106,16 +149,34 @@ async function updateAnnouncement(id, facultyId, data) {
   const existing = await prisma.announcement.findUnique({ where: { id } });
   if (!existing) throw new NotFoundError('Announcement not found');
 
+  const updateData = {};
+  if (data.title !== undefined) updateData.title = data.title;
+  if (data.content !== undefined) updateData.content = data.content;
+  if (data.courseId !== undefined) updateData.courseId = data.courseId || null;
+  if (data.targetYearLevel !== undefined) updateData.targetYearLevel = data.targetYearLevel || null;
+  if (data.isGeneral !== undefined) updateData.isGeneral = data.isGeneral;
+  if (data.status !== undefined) updateData.status = data.status;
+  if (data.publishAt !== undefined) updateData.publishAt = data.publishAt ? new Date(data.publishAt) : null;
+  if (data.expiresAt !== undefined) updateData.expiresAt = data.expiresAt ? new Date(data.expiresAt) : null;
+
   return prisma.announcement.update({
     where: { id },
-    data: {
-      title: data.title,
-      content: data.content,
-      courseId: data.courseId !== undefined ? data.courseId : existing.courseId,
-      targetYearLevel: data.targetYearLevel !== undefined ? data.targetYearLevel : existing.targetYearLevel,
-      isGeneral: data.isGeneral !== undefined ? data.isGeneral : existing.isGeneral,
+    data: updateData,
+    include: {
+      attachments: true,
+      course: { select: { id: true, code: true, name: true } },
+      faculty: { select: { fullName: true } },
     },
-    include: { attachments: true },
+  });
+}
+
+async function archiveAnnouncement(id) {
+  const existing = await prisma.announcement.findUnique({ where: { id } });
+  if (!existing) throw new NotFoundError('Announcement not found');
+
+  return prisma.announcement.update({
+    where: { id },
+    data: { status: 'archived' },
   });
 }
 
@@ -124,7 +185,6 @@ async function deleteAnnouncement(id) {
   if (!existing) throw new NotFoundError('Announcement not found');
 
   await supabase.storage.from(ATTACHMENT_BUCKET).remove([`announcements/${id}`]);
-
   await prisma.announcement.delete({ where: { id } });
 }
 
@@ -135,11 +195,29 @@ async function getAttachmentSignedUrl(fileUrl) {
   return data?.signedUrl || null;
 }
 
+async function markAsRead(announcementId, studentId) {
+  const announcement = await prisma.announcement.findUnique({ where: { id: announcementId } });
+  if (!announcement) throw new NotFoundError('Announcement not found');
+
+  await prisma.announcementRead.upsert({
+    where: { announcementId_studentId: { announcementId, studentId } },
+    update: { readAt: new Date() },
+    create: { announcementId, studentId },
+  });
+}
+
+async function getReadCount(announcementId) {
+  return prisma.announcementRead.count({ where: { announcementId } });
+}
+
 module.exports = {
   listAnnouncements,
   getAnnouncement,
   createAnnouncement,
   updateAnnouncement,
+  archiveAnnouncement,
   deleteAnnouncement,
   getAttachmentSignedUrl,
+  markAsRead,
+  getReadCount,
 };

@@ -663,7 +663,7 @@ export default function AdminSanctionsPage() {
                       { oldStatus: null, newStatus: 'active', createdAt: detailRow.activeSanction.triggeredAt, changedBy: null, reason: 'Auto-triggered' },
                       ...detailChanges,
                     ].map((c, idx) => (
-                      <div key={c.id || `initial-${idx}`} className={styles.timelineItem}>
+                      <div key={'id' in c ? c.id : `initial-${idx}`} className={styles.timelineItem}>
                         <div>
                           <div className={`${styles.timelineDot} ${
                             c.newStatus === 'active' ? styles.timelineDotActive
@@ -751,7 +751,7 @@ export default function AdminSanctionsPage() {
         </div>
         <div className={styles.field}>
           <label className={styles.label}>Description (optional)</label>
-          <Input value={ruleDescription} onChange={(e) => setRuleDescription(e.target.value)} placeholder="e.g. First warning level" />
+          <textarea value={ruleDescription} onChange={(e) => setRuleDescription(e.target.value)} placeholder="e.g. First warning level" className={styles.textarea} rows={2} onInput={(e) => { e.currentTarget.style.height = ''; e.currentTarget.style.height = e.currentTarget.scrollHeight + 'px' }} />
         </div>
         {editingRuleId && <Button variant="ghost" size="sm" onClick={resetRuleForm}>Cancel Editing</Button>}
         <div className={styles.rulesList}>

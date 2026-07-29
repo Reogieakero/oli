@@ -42,5 +42,4 @@ export { DataTable } from './DataTable/DataTable'
 export type { Column, SortState, PaginationState } from './DataTable/DataTable'
 
 export { Sidebar } from './Sidebar/Sidebar'
-export type { NavItem } from './Sidebar/Sidebar'
 export { Navbar } from './Navbar/Navbar'

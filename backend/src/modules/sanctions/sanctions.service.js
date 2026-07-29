@@ -80,8 +80,6 @@ async function listSanctions(page = 1, limit = 20, filters = {}) {
     orderBy: [{ type: 'asc' }, { absenceThreshold: 'asc' }],
   });
 
-  await autoTriggerSanctions();
-
   let sanctionWhere = {};
   if (filters.status) sanctionWhere.status = filters.status;
   else sanctionWhere.status = 'active';
@@ -175,27 +173,47 @@ async function getSanction(id) {
 }
 
 async function getSanctionSummary() {
-  const studentCount = await prisma.student.count();
-  const activeSanctions = await prisma.sanction.findMany({
-    where: { status: 'active' },
-    include: { sanctionRule: { select: { sanctionLevel: true, type: true } } },
-  });
+  const [studentCount, activeCount, ruleIdCounts] = await Promise.all([
+    prisma.student.count(),
+    prisma.sanction.count({ where: { status: 'active' } }),
+    prisma.sanction.groupBy({
+      by: ['sanctionRuleId'],
+      where: { status: 'active' },
+      _count: true,
+    }),
+  ]);
+
+  const ruleIds = ruleIdCounts.map((r) => r.sanctionRuleId);
+  const rules = ruleIds.length > 0
+    ? await prisma.sanctionRule.findMany({
+        where: { id: { in: ruleIds } },
+        select: { id: true, sanctionLevel: true, type: true },
+      })
+    : [];
+
+  const ruleMap = {};
+  for (const r of rules) {
+    ruleMap[r.id] = r;
+  }
+
   const bySeverity = {};
   const byType = {};
-  for (const s of activeSanctions) {
-    const level = s.sanctionRule.sanctionLevel;
-    bySeverity[level] = (bySeverity[level] || 0) + 1;
-    const t = s.sanctionRule.type;
-    byType[t] = (byType[t] || 0) + 1;
+  for (const row of ruleIdCounts) {
+    const rule = ruleMap[row.sanctionRuleId];
+    if (rule) {
+      bySeverity[rule.sanctionLevel] = (bySeverity[rule.sanctionLevel] || 0) + row._count;
+      byType[rule.type] = (byType[rule.type] || 0) + row._count;
+    }
   }
+
   return {
-    active: activeSanctions.length,
+    active: activeCount,
     totalStudents: studentCount,
     bySeverity: Object.entries(bySeverity).map(([level, count]) => ({ level, count })),
     byType: Object.entries(byType).map(([type, count]) => ({ type, count })),
     byLevel: [
-      { status: 'active', _count: activeSanctions.length },
-      { status: 'no_sanction', _count: studentCount - activeSanctions.length },
+      { status: 'active', _count: activeCount },
+      { status: 'no_sanction', _count: studentCount - activeCount },
     ],
   };
 }
@@ -336,64 +354,70 @@ async function autoTriggerSanctions() {
   const absenceRules = rules.filter((r) => r.type === 'absence');
   const lateRules = rules.filter((r) => r.type === 'late');
 
-  const students = await prisma.student.findMany({ select: { id: true } });
+  const [students, absenceCounts, lateCounts, existingSanctions] = await Promise.all([
+    prisma.student.findMany({ select: { id: true } }),
+    prisma.attendanceRecord.groupBy({
+      by: ['studentId'],
+      where: { status: 'absent' },
+      _count: true,
+    }),
+    prisma.attendanceRecord.groupBy({
+      by: ['studentId'],
+      where: { status: 'late' },
+      _count: true,
+    }),
+    prisma.sanction.findMany({
+      where: { status: 'active' },
+      select: { id: true, studentId: true, sanctionRuleId: true, sanctionRule: { select: { type: true, absenceThreshold: true } } },
+    }),
+  ]);
 
-  let created = 0;
-  let upgraded = 0;
+  const absenceMap = new Map(absenceCounts.map((a) => [a.studentId, a._count]));
+  const lateMap = new Map(lateCounts.map((a) => [a.studentId, a._count]));
+
+  const existingByStudent = {};
+  for (const s of existingSanctions) {
+    if (!existingByStudent[s.studentId]) existingByStudent[s.studentId] = {};
+    existingByStudent[s.studentId][s.sanctionRule.type] = s;
+  }
+
+  const toCreate = [];
+  const toUpdate = [];
 
   for (const student of students) {
-    const [absenceCount, lateCount, existingSanctions] = await Promise.all([
-      prisma.attendanceRecord.count({ where: { studentId: student.id, status: 'absent' } }),
-      prisma.attendanceRecord.count({ where: { studentId: student.id, status: 'late' } }),
-      prisma.sanction.findMany({
-        where: { studentId: student.id, status: 'active' },
-        select: { id: true, sanctionRuleId: true, sanctionRule: { select: { type: true, absenceThreshold: true } } },
-      }),
-    ]);
-
-    const existingByType = {};
-    for (const s of existingSanctions) {
-      existingByType[s.sanctionRule.type] = s;
-    }
+    const absenceCount = absenceMap.get(student.id) || 0;
+    const lateCount = lateMap.get(student.id) || 0;
+    const existingMap = existingByStudent[student.id] || {};
 
     const bestAbsenceRule = findBestRule(absenceRules, absenceCount);
     if (bestAbsenceRule) {
-      const existing = existingByType['absence'];
+      const existing = existingMap['absence'];
       if (!existing) {
-        await prisma.sanction.create({ data: { studentId: student.id, sanctionRuleId: bestAbsenceRule.id } });
-        created++;
-      } else if (existing.sanctionRuleId !== bestAbsenceRule.id) {
-        const currentThreshold = existing.sanctionRule.absenceThreshold;
-        if (bestAbsenceRule.absenceThreshold > currentThreshold) {
-          await prisma.sanction.update({
-            where: { id: existing.id },
-            data: { sanctionRuleId: bestAbsenceRule.id, resolvedAt: null },
-          });
-          upgraded++;
-        }
+        toCreate.push({ studentId: student.id, sanctionRuleId: bestAbsenceRule.id });
+      } else if (existing.sanctionRuleId !== bestAbsenceRule.id && bestAbsenceRule.absenceThreshold > existing.sanctionRule.absenceThreshold) {
+        toUpdate.push({ id: existing.id, sanctionRuleId: bestAbsenceRule.id });
       }
     }
 
     const bestLateRule = findBestRule(lateRules, lateCount);
     if (bestLateRule) {
-      const existing = existingByType['late'];
+      const existing = existingMap['late'];
       if (!existing) {
-        await prisma.sanction.create({ data: { studentId: student.id, sanctionRuleId: bestLateRule.id } });
-        created++;
-      } else if (existing.sanctionRuleId !== bestLateRule.id) {
-        const currentThreshold = existing.sanctionRule.absenceThreshold;
-        if (bestLateRule.absenceThreshold > currentThreshold) {
-          await prisma.sanction.update({
-            where: { id: existing.id },
-            data: { sanctionRuleId: bestLateRule.id, resolvedAt: null },
-          });
-          upgraded++;
-        }
+        toCreate.push({ studentId: student.id, sanctionRuleId: bestLateRule.id });
+      } else if (existing.sanctionRuleId !== bestLateRule.id && bestLateRule.absenceThreshold > existing.sanctionRule.absenceThreshold) {
+        toUpdate.push({ id: existing.id, sanctionRuleId: bestLateRule.id });
       }
     }
   }
 
-  return { created, upgraded };
+  if (toCreate.length > 0) {
+    await prisma.sanction.createMany({ data: toCreate });
+  }
+  for (const u of toUpdate) {
+    await prisma.sanction.update({ where: { id: u.id }, data: { sanctionRuleId: u.sanctionRuleId, resolvedAt: null } });
+  }
+
+  return { created: toCreate.length, upgraded: toUpdate.length };
 }
 
 async function getFlaggedStudents() {
@@ -406,20 +430,34 @@ async function getFlaggedStudents() {
   const absenceRules = rules.filter((r) => r.type === 'absence');
   const lateRules = rules.filter((r) => r.type === 'late');
 
-  const students = await prisma.student.findMany({
-    select: {
-      id: true,
-      firstName: true,
-      lastName: true,
-      studentId: true,
-      course: { select: { id: true, code: true, name: true } },
-    },
-  });
+  const [students, activeSanctions, absenceCounts, lateCounts] = await Promise.all([
+    prisma.student.findMany({
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        studentId: true,
+        course: { select: { id: true, code: true, name: true } },
+      },
+    }),
+    prisma.sanction.findMany({
+      where: { status: 'active' },
+      select: { studentId: true, sanctionRule: { select: { type: true } } },
+    }),
+    prisma.attendanceRecord.groupBy({
+      by: ['studentId'],
+      where: { status: 'absent' },
+      _count: true,
+    }),
+    prisma.attendanceRecord.groupBy({
+      by: ['studentId'],
+      where: { status: 'late' },
+      _count: true,
+    }),
+  ]);
 
-  const activeSanctions = await prisma.sanction.findMany({
-    where: { status: 'active' },
-    select: { studentId: true, sanctionRule: { select: { type: true } } },
-  });
+  const absenceMap = new Map(absenceCounts.map((a) => [a.studentId, a._count]));
+  const lateMap = new Map(lateCounts.map((a) => [a.studentId, a._count]));
 
   const studentsWithAbsenceSanction = new Set(
     activeSanctions.filter((s) => s.sanctionRule.type === 'absence').map((s) => s.studentId)
@@ -430,10 +468,8 @@ async function getFlaggedStudents() {
 
   const result = [];
   for (const student of students) {
-    const [absenceCount, lateCount] = await Promise.all([
-      prisma.attendanceRecord.count({ where: { studentId: student.id, status: 'absent' } }),
-      prisma.attendanceRecord.count({ where: { studentId: student.id, status: 'late' } }),
-    ]);
+    const absenceCount = absenceMap.get(student.id) || 0;
+    const lateCount = lateMap.get(student.id) || 0;
 
     if (!studentsWithAbsenceSanction.has(student.id) && absenceRules.length > 0) {
       const lowestAbsenceThreshold = absenceRules[0].absenceThreshold;

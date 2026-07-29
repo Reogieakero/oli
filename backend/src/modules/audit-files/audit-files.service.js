@@ -11,32 +11,66 @@ async function ensureBucket() {
   }
 }
 
-async function listAuditFiles(page = 1, limit = 20) {
+async function listAuditFiles(params = {}) {
+  const page = parseInt(params.page) || 1;
+  const limit = parseInt(params.limit) || 20;
+  const { search, category, courseId, sortBy, sortOrder } = params;
   const skip = (page - 1) * limit;
+
+  const where = {};
+  if (search) where.OR = [
+    { title: { contains: search, mode: 'insensitive' } },
+    { description: { contains: search, mode: 'insensitive' } },
+  ];
+  if (category) where.category = category;
+  if (courseId) where.courseId = courseId;
+
+  const orderBy = {};
+  orderBy[sortBy || 'createdAt'] = sortOrder || 'desc';
+
   const [data, total] = await Promise.all([
     prisma.auditFile.findMany({
+      where,
       skip,
       take: limit,
-      orderBy: { createdAt: 'desc' },
-      include: { faculty: { select: { fullName: true } } },
+      orderBy,
+      include: {
+        faculty: { select: { fullName: true } },
+        course: { select: { id: true, code: true, name: true } },
+      },
     }),
-    prisma.auditFile.count(),
+    prisma.auditFile.count({ where }),
   ]);
 
   return { data, total, page, limit };
 }
 
 async function getAuditFile(id) {
-  const file = await prisma.auditFile.findUnique({ where: { id } });
+  const file = await prisma.auditFile.findUnique({
+    where: { id },
+    include: {
+      faculty: { select: { fullName: true } },
+      course: { select: { id: true, code: true, name: true } },
+    },
+  });
   if (!file) throw new NotFoundError('Audit file not found');
   return file;
 }
 
-async function uploadAuditFile(userId, { title, description, file }) {
+async function uploadAuditFile(userId, userEmail, { title, description, category, courseId, file }) {
   await ensureBucket();
 
-  const faculty = await prisma.faculty.findUnique({ where: { userId } });
-  if (!faculty) throw new NotFoundError('Faculty profile not found');
+  let faculty = await prisma.faculty.findUnique({ where: { userId } });
+  if (!faculty) {
+    const user = await prisma.user.findUnique({ where: { email: userEmail } });
+    if (!user) throw new NotFoundError('User not found');
+    faculty = await prisma.faculty.findUnique({ where: { userId: user.id } });
+    if (!faculty) {
+      faculty = await prisma.faculty.create({
+        data: { userId: user.id, fullName: user.email },
+      });
+    }
+  }
 
   const filePath = `audit/${Date.now()}_${file.originalname}`;
   const { error: uploadError } = await supabase.storage
@@ -50,10 +84,15 @@ async function uploadAuditFile(userId, { title, description, file }) {
       facultyId: faculty.id,
       title,
       description: description || null,
+      category: category || null,
+      courseId: courseId || null,
       fileName: file.originalname,
       fileUrl: filePath,
       fileSize: file.size,
       mimeType: file.mimetype,
+    },
+    include: {
+      course: { select: { id: true, code: true, name: true } },
     },
   });
 }

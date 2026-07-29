@@ -41,6 +41,12 @@ enum SanctionRuleType {
   late
 }
 
+enum AnnouncementStatus {
+  draft
+  published
+  archived
+}
+
 enum ScanMethod {
   qr_scan
   manual
@@ -49,8 +55,10 @@ enum ScanMethod {
 model User {
   id           String   @id @default(uuid()) @db.Uuid
   email        String   @unique @db.VarChar(150)
-  passwordHash String   @map("password_hash") @db.VarChar(255)
+  passwordHash String?  @map("password_hash") @db.VarChar(255)
+  googleId     String?  @unique @map("google_id") @db.VarChar(255)
   role         UserRole
+  needsProfile Boolean  @default(false) @map("needs_profile")
   createdAt    DateTime @default(now()) @map("created_at") @db.Timestamp(6)
   updatedAt    DateTime @updatedAt @map("updated_at") @db.Timestamp(6)
 
@@ -64,10 +72,10 @@ model User {
 model Student {
   id              String    @id @default(uuid()) @db.Uuid
   userId          String    @unique @map("user_id") @db.Uuid
-  firstName       String    @map("first_name") @db.VarChar(100)
-  lastName        String    @map("last_name") @db.VarChar(100)
+  firstName       String    @default("") @map("first_name") @db.VarChar(100)
+  lastName        String    @default("") @map("last_name") @db.VarChar(100)
   studentId       String    @unique @map("student_id") @db.VarChar(20)
-  courseId        String    @map("course_id") @db.Uuid
+  courseId        String?   @map("course_id") @db.Uuid
   yearLevel       Int       @map("year_level") @db.SmallInt
   qrCodeToken     String    @unique @map("qr_code_token") @db.VarChar(255)
   qrRegeneratedAt DateTime? @map("qr_regenerated_at") @db.Timestamp(6)
@@ -75,11 +83,12 @@ model Student {
   updatedAt       DateTime  @updatedAt @map("updated_at") @db.Timestamp(6)
 
   user             User               @relation(fields: [userId], references: [id], onDelete: Cascade)
-  course           Course             @relation(fields: [courseId], references: [id])
+  course           Course?            @relation(fields: [courseId], references: [id])
   attendanceRecords AttendanceRecord[]
   sanctions        Sanction[]
   balances         Balance[]
   disputes         Dispute[]
+  announcementReads AnnouncementRead[]
 
   @@map("students")
 }
@@ -100,7 +109,6 @@ model Faculty {
   changes        AttendanceRecordChange[]
   sanctionsIssued  Sanction[]               @relation("SanctionIssuer")
   sanctionChanges  SanctionStatusChange[]
-
   @@map("faculty")
 }
 
@@ -114,27 +122,47 @@ model Course {
   announcements Announcement[]
   events        Event[]
   students      Student[]
+  auditFiles    AuditFile[]
 
   @@map("courses")
 }
 
 model Announcement {
-  id              String   @id @default(uuid()) @db.Uuid
-  facultyId       String   @map("faculty_id") @db.Uuid
-  courseId        String?  @map("course_id") @db.Uuid
-  title           String   @db.VarChar(150)
+  id              String             @id @default(uuid()) @db.Uuid
+  facultyId       String             @map("faculty_id") @db.Uuid
+  courseId        String?            @map("course_id") @db.Uuid
+  title           String             @db.VarChar(150)
   content         String
-  targetYearLevel Int?     @map("target_year_level") @db.SmallInt
-  isGeneral       Boolean  @default(false) @map("is_general")
-  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamp(6)
-  updatedAt       DateTime @updatedAt @map("updated_at") @db.Timestamp(6)
+  targetYearLevel Int?               @map("target_year_level") @db.SmallInt
+  isGeneral       Boolean            @default(false) @map("is_general")
+  status          AnnouncementStatus @default(draft)
+  publishAt       DateTime?          @map("publish_at") @db.Timestamp(6)
+  expiresAt       DateTime?          @map("expires_at") @db.Timestamp(6)
+  createdAt       DateTime           @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt       DateTime           @updatedAt @map("updated_at") @db.Timestamp(6)
 
   faculty     Faculty                  @relation(fields: [facultyId], references: [id])
   course      Course?                  @relation(fields: [courseId], references: [id])
   attachments AnnouncementAttachment[]
+  reads       AnnouncementRead[]
 
   @@index([courseId, targetYearLevel], name: "idx_announcements_targeting")
+  @@index([status], name: "idx_announcements_status")
   @@map("announcements")
+}
+
+model AnnouncementRead {
+  id             String   @id @default(uuid()) @db.Uuid
+  announcementId String   @map("announcement_id") @db.Uuid
+  studentId      String   @map("student_id") @db.Uuid
+  readAt         DateTime @default(now()) @map("read_at") @db.Timestamp(6)
+
+  announcement Announcement @relation(fields: [announcementId], references: [id], onDelete: Cascade)
+  student      Student      @relation(fields: [studentId], references: [id])
+
+  @@unique([announcementId, studentId], name: "uq_announcement_read")
+  @@index([announcementId], name: "idx_announcement_reads")
+  @@map("announcement_reads")
 }
 
 model AnnouncementAttachment {
@@ -178,6 +206,7 @@ model Event {
   attendanceRecords AttendanceRecord[]
 
   @@index([courseId, targetYearLevel], name: "idx_events_targeting")
+  @@index([eventDate], name: "idx_events_date")
   @@map("events")
 }
 
@@ -199,6 +228,7 @@ model AttendanceRecord {
 
   @@unique([studentId, eventId], name: "uq_attendance_event_student")
   @@index([studentId, status], name: "idx_attendance_student_status")
+  @@index([eventId, status], name: "idx_attendance_event_status")
   @@map("attendance_records")
 }
 
@@ -347,6 +377,8 @@ model Feedback {
 model AuditFile {
   id          String   @id @default(uuid()) @db.Uuid
   facultyId   String   @map("faculty_id") @db.Uuid
+  courseId    String?  @map("course_id") @db.Uuid
+  category    String?  @db.VarChar(50)
   title       String   @db.VarChar(150)
   description String?
   fileName    String   @map("file_name") @db.VarChar(255)
@@ -356,6 +388,7 @@ model AuditFile {
   createdAt   DateTime @default(now()) @map("created_at") @db.Timestamp(6)
 
   faculty Faculty @relation(fields: [facultyId], references: [id])
+  course  Course? @relation(fields: [courseId], references: [id])
 
   @@map("audit_files")
 }

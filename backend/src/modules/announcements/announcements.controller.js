@@ -1,10 +1,9 @@
+const prisma = require('../../config/database');
 const announcementService = require('./announcements.service');
 
 async function list(req, res, next) {
   try {
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 20;
-    const result = await announcementService.listAnnouncements(req.user, page, limit);
+    const result = await announcementService.listAnnouncements(req.user, req.query);
     res.json(result);
   } catch (err) {
     next(err);
@@ -24,6 +23,7 @@ async function create(req, res, next) {
   try {
     const announcement = await announcementService.createAnnouncement(
       req.user.sub,
+      req.user.email,
       req.parsed.body,
       req.files || []
     );
@@ -40,6 +40,15 @@ async function update(req, res, next) {
       req.user.sub,
       req.parsed.body
     );
+    res.json(announcement);
+  } catch (err) {
+    next(err);
+  }
+}
+
+async function archive(req, res, next) {
+  try {
+    const announcement = await announcementService.archiveAnnouncement(req.params.id);
     res.json(announcement);
   } catch (err) {
     next(err);
@@ -65,4 +74,24 @@ async function getAttachmentUrl(req, res, next) {
   }
 }
 
-module.exports = { list, getById, create, update, remove, getAttachmentUrl };
+async function markRead(req, res, next) {
+  try {
+    const student = await prisma.student.findUnique({ where: { userId: req.user.sub } });
+    if (!student) return res.status(403).json({ error: { message: 'Only students can mark as read', statusCode: 403 } });
+    await announcementService.markAsRead(req.params.id, student.id);
+    res.status(204).end();
+  } catch (err) {
+    next(err);
+  }
+}
+
+async function readCount(req, res, next) {
+  try {
+    const count = await announcementService.getReadCount(req.params.id);
+    res.json({ count });
+  } catch (err) {
+    next(err);
+  }
+}
+
+module.exports = { list, getById, create, update, archive, remove, getAttachmentUrl, markRead, readCount };

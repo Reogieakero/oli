@@ -20,7 +20,10 @@ router.post(
   controller.create
 );
 router.put('/:id', authenticate, authorize('faculty'), validate(updateAnnouncementSchema), controller.update);
+router.patch('/:id/archive', authenticate, authorize('faculty'), controller.archive);
 router.delete('/:id', authenticate, authorize('faculty'), controller.remove);
 router.get('/attachments/:fileUrl', authenticate, controller.getAttachmentUrl);
+router.post('/:id/read', authenticate, controller.markRead);
+router.get('/:id/reads', authenticate, controller.readCount);
 
 module.exports = router;

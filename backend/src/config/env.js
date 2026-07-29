@@ -17,6 +17,11 @@ const env = {
   facultyEmail: process.env.FACULTY_EMAIL || 'faculty@oli.edu',
   facultyPassword: process.env.FACULTY_PASSWORD || 'admin123',
 
+  googleClientId: process.env.GOOGLE_CLIENT_ID,
+  googleClientSecret: process.env.GOOGLE_CLIENT_SECRET,
+  googleCallbackUrl: process.env.GOOGLE_CALLBACK_URL || 'http://localhost:4000/api/v1/auth/google/callback',
+  clientUrl: process.env.CLIENT_URL || 'http://localhost:3000',
+
   jwtAccessExpiry: process.env.JWT_ACCESS_EXPIRY || '8h',
   jwtRefreshExpiry: process.env.JWT_REFRESH_EXPIRY || '7d',
 };

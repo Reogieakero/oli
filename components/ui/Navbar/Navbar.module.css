@@ -26,104 +26,39 @@
   letter-spacing: -0.01em;
 }
 
+.separator {
+  color: var(--color-neutral-400);
+  font-size: var(--text-base);
+  margin: 0 2px;
+}
+
+.pageName {
+  font-family: var(--font-heading);
+  font-size: var(--text-base);
+  font-weight: 500;
+  color: var(--color-neutral-500);
+}
+
 .right {
   display: flex;
   align-items: center;
   gap: var(--space-2);
 }
 
-.iconBtn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  border: none;
-  border-radius: var(--radius-control-sm);
-  background: transparent;
-  color: var(--color-muted-fg);
-  cursor: pointer;
-  transition: background 0.1s, color 0.1s;
-}
-
-.iconBtn:hover {
-  background: var(--color-muted-bg);
-  color: var(--color-neutral-900);
-}
-
-.divider {
-  width: 1px;
-  height: 20px;
-  background: var(--color-border);
-  margin: 0 var(--space-1);
-}
-
-.userMenu {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  padding: 2px 6px 2px 2px;
-  border-radius: var(--radius-control-sm);
-  cursor: pointer;
-  transition: background 0.1s;
-}
-
-.userMenu:hover {
-  background: var(--color-muted-bg);
-}
-
 .avatar {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 26px;
-  height: 26px;
+  width: 32px;
+  height: 32px;
   border-radius: var(--radius-full);
-  background: var(--color-brand-primary);
-  color: var(--color-neutral-0);
-  font-size: 11px;
-  font-weight: 600;
-  flex-shrink: 0;
-}
-
-.userText {
-  display: none;
-}
-
-.userName {
-  font-size: var(--control-font-size);
-  font-weight: 500;
-  color: var(--color-neutral-900);
-  line-height: 1.2;
-}
-
-.userRole {
-  font-size: 11px;
-  color: var(--color-muted-fg);
-  line-height: 1.2;
-}
-
-.logoutBtn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  border: none;
-  border-radius: var(--radius-control-sm);
-  background: transparent;
-  color: var(--color-muted-fg);
+  background: var(--color-neutral-200);
+  color: var(--color-neutral-700);
   cursor: pointer;
-  transition: background 0.1s, color 0.1s;
+  transition: background 0.15s;
+  user-select: none;
 }
 
-.logoutBtn:hover {
-  background: var(--color-muted-bg);
-  color: var(--color-status-danger);
-}
-
-@media (min-width: 768px) {
-  .userText {
-    display: block;
-  }
+.avatar:hover {
+  background: var(--color-neutral-300);
 }

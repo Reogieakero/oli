@@ -321,6 +321,7 @@
   flex-direction: column;
   gap: 16px;
   overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .form {
@@ -358,11 +359,13 @@
 
 .ruleFormRow {
   display: flex;
-  gap: 12px;
+  flex-wrap: wrap;
+  gap: 10px;
 }
 
 .ruleFormRow .field {
-  flex: 1;
+  flex: 1 1 calc(50% - 10px);
+  min-width: 0;
 }
 
 .ruleFormActions {
@@ -393,6 +396,14 @@
   flex-direction: column;
   gap: 2px;
   flex: 1;
+  min-width: 0;
+  word-break: break-word;
+}
+
+.ruleLevel,
+.ruleMeta,
+.ruleDesc {
+  word-break: break-word;
 }
 
 .ruleLevel {
@@ -409,6 +420,31 @@
 .ruleDesc {
   font-size: 13px;
   color: var(--color-text-secondary);
+}
+
+.textarea {
+  width: 100%;
+  min-height: 60px;
+  padding: 10px 12px;
+  font-size: 13px;
+  border: 1px solid var(--color-border, #d1d5db);
+  border-radius: 6px;
+  background: var(--color-bg, #fff);
+  color: var(--color-neutral-900, #111827);
+  resize: vertical;
+  font-family: inherit;
+  line-height: 1.5;
+  box-sizing: border-box;
+}
+
+.textarea:focus {
+  outline: none;
+  border-color: var(--color-brand, #6366f1);
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.15);
+}
+
+.textarea::placeholder {
+  color: var(--color-text-muted, #9ca3af);
 }
 
 .inactiveLabel {

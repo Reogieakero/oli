@@ -148,6 +148,7 @@ export default function AdminEventsPage() {
   const [courseFilter, setCourseFilter] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
+  const [totalEvents, setTotalEvents] = useState(0)
 
   const [formOpen, setFormOpen] = useState(false)
   const [formStep, setFormStep] = useState<'form' | 'preview'>('form')
@@ -190,13 +191,16 @@ export default function AdminEventsPage() {
 
   const fetchEvents = useCallback(async () => {
     try {
-      const params = new URLSearchParams({ limit: '200' })
+      const params = new URLSearchParams()
+      params.set('page', String(currentPage))
+      params.set('limit', String(PAGE_SIZE))
       if (courseFilter) params.set('courseId', courseFilter)
       const result = await apiClient<{ data: EventItem[]; total: number }>(
         `/events?${params.toString()}`,
         { authenticated: true }
       )
       setEvents(result.data)
+      setTotalEvents(result.total)
     } catch (err) {
       if (err instanceof ApiError && err.statusCode === 401) {
         router.replace('/admin-login')
@@ -204,11 +208,11 @@ export default function AdminEventsPage() {
     } finally {
       setLoading(false)
     }
-  }, [router, courseFilter])
+  }, [router, currentPage, courseFilter])
 
   const fetchCourses = useCallback(async () => {
     try {
-      const result = await apiClient<{ data: Course[] }>('/courses?limit=200', {
+      const result = await apiClient<{ data: Course[] }>('/courses?limit=20', {
         authenticated: true,
       })
       setCourses(result.data)
@@ -219,7 +223,7 @@ export default function AdminEventsPage() {
 
   const fetchAttendance = useCallback(async () => {
     try {
-      const result = await apiClient<{ data: EventAttendance[] }>('/reports/events?limit=200', {
+      const result = await apiClient<{ data: EventAttendance[] }>('/reports/events?limit=20', {
         authenticated: true,
       })
       const map = new Map<string, EventAttendance>()
@@ -312,7 +316,7 @@ export default function AdminEventsPage() {
       }))
   }, [events, searchQuery, statusFilter, attendanceMap])
 
-  const pageCount = Math.max(1, Math.ceil(rows.length / PAGE_SIZE))
+  const pageCount = Math.max(1, Math.ceil(totalEvents / PAGE_SIZE))
   const clampedPage = Math.min(currentPage, pageCount)
   const paginatedRows = rows.slice(
     (clampedPage - 1) * PAGE_SIZE,

@@ -159,6 +159,7 @@ async function refreshAccessToken(refreshToken) {
 }
 
 module.exports = {
+  generateTokens,
   registerStudent,
   loginStudent,
   loginFaculty,

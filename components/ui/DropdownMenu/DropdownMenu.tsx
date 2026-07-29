@@ -12,7 +12,7 @@ import {
 import styles from './DropdownMenu.module.css'
 
 interface MenuItemConfig {
-  label: string
+  label?: string
   onClick?: () => void
   disabled?: boolean
   separator?: boolean

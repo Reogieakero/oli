@@ -13,6 +13,21 @@ import { Tabs, type Tab } from '@/components/ui/Tabs/Tabs'
 import { useToast } from '@/components/ui/Toast/Toast'
 import styles from './page.module.css'
 
+function formatTime(timeStr: string): string {
+  const timePart = timeStr.includes('T') ? timeStr.split('T')[1] : timeStr
+  const parts = timePart.split(':')
+  if (parts.length < 2) return timeStr
+  const h = parseInt(parts[0], 10)
+  const m = parts[1]
+  const ampm = h >= 12 ? 'PM' : 'AM'
+  const h12 = h % 12 || 12
+  return `${h12}:${m} ${ampm}`
+}
+
+function formatDate(dateStr: string): string {
+  return new Date(dateStr).toLocaleDateString()
+}
+
 const PAGE_SIZE = 10
 
 interface Course {
@@ -40,6 +55,9 @@ interface EventItem {
   id: string
   title: string
   eventDate: string
+  startTime: string
+  venue: string
+  isMandatory: boolean
   course: { code: string; name: string } | null
 }
 
@@ -93,10 +111,13 @@ export default function AdminCoursesPage() {
   const [detailTab, setDetailTab] = useState('overview')
 
   const fetchCourses = useCallback(async () => {
+    setLoading(true)
     try {
-      const result = await apiClient<{ data: Course[]; total: number }>('/courses?limit=200', {
-        authenticated: true,
-      })
+      const q = searchQuery ? `&search=${encodeURIComponent(searchQuery)}` : ''
+      const result = await apiClient<{ data: Course[]; total: number }>(
+        `/courses?page=${currentPage}&limit=${PAGE_SIZE}${q}`,
+        { authenticated: true }
+      )
       setCourses(result.data)
       setTotalCourses(result.total)
     } catch (err) {
@@ -106,13 +127,14 @@ export default function AdminCoursesPage() {
     } finally {
       setLoading(false)
     }
-  }, [router])
+  }, [router, currentPage, searchQuery])
 
   const fetchAttendance = useCallback(async () => {
     try {
-      const result = await apiClient<{ data: CourseAttendance[] }>('/reports/courses', {
-        authenticated: true,
-      })
+      const result = await apiClient<{ data: CourseAttendance[] }>(
+        `/reports/courses?page=${currentPage}&limit=${PAGE_SIZE}`,
+        { authenticated: true }
+      )
       const map = new Map<string, CourseAttendance>()
       for (const c of result.data) {
         map.set(c.id, c)
@@ -121,39 +143,29 @@ export default function AdminCoursesPage() {
     } catch {
       /* silently fail */
     }
-  }, [])
+  }, [currentPage])
 
   useEffect(() => {
     fetchCourses()
     fetchAttendance()
   }, [fetchCourses, fetchAttendance])
 
-  const rows: CourseRow[] = useMemo(() => {
-    const q = searchQuery.toLowerCase()
-    return courses
-      .filter((c) => {
-        if (!q) return true
-        return (
-          c.code.toLowerCase().includes(q) ||
-          c.name.toLowerCase().includes(q)
-        )
-      })
-      .map((c) => ({
+  const rows: CourseRow[] = useMemo(
+    () =>
+      courses.map((c) => ({
         id: c.id,
         code: c.code,
         name: c.name,
         events: c._count?.events ?? 0,
         students: c._count?.students ?? 0,
         attendanceRate: attendanceMap.get(c.id)?.attendanceRate ?? null,
-      }))
-  }, [courses, searchQuery, attendanceMap])
-
-  const pageCount = Math.max(1, Math.ceil(rows.length / PAGE_SIZE))
-  const clampedPage = Math.min(currentPage, pageCount)
-  const paginatedRows = rows.slice(
-    (clampedPage - 1) * PAGE_SIZE,
-    clampedPage * PAGE_SIZE
+      })),
+    [courses, attendanceMap]
   )
+
+  const pageCount = Math.max(1, Math.ceil(totalCourses / PAGE_SIZE))
+  const clampedPage = Math.min(currentPage, pageCount)
+  const paginatedRows = rows
 
   const openCreate = useCallback(() => {
     setEditingCourse(null)

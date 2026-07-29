@@ -267,8 +267,8 @@ export default function AdminAttendancePage() {
   const fetchFilters = useCallback(async () => {
     try {
       const [eventsResult, coursesResult] = await Promise.all([
-        apiClient<{ data: EventOption[] }>('/events?limit=200', { authenticated: true }),
-        apiClient<{ data: { id: string; code: string; name: string }[] }>('/courses?limit=200', { authenticated: true }),
+        apiClient<{ data: EventOption[] }>('/events?limit=20', { authenticated: true }),
+        apiClient<{ data: { id: string; code: string; name: string }[] }>('/courses?limit=20', { authenticated: true }),
       ])
       setEvents(eventsResult.data)
       setCourses([
@@ -282,7 +282,7 @@ export default function AdminAttendancePage() {
 
   const fetchStudents = useCallback(async () => {
     try {
-      const result = await apiClient<{ data: StudentOption[] }>('/students', { authenticated: true })
+      const result = await apiClient<{ data: StudentOption[] }>('/students?limit=200', { authenticated: true })
       setAllStudents(result.data)
     } catch {
       /* silently fail */

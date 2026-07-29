@@ -3,37 +3,37 @@ const prisma = require('../../config/database');
 async function attendanceByEvent(page = 1, limit = 20) {
   const skip = (page - 1) * limit;
 
-  const events = await prisma.event.findMany({
-    skip,
-    take: limit,
-    orderBy: { eventDate: 'desc' },
-    include: {
-      course: { select: { code: true, name: true } },
-      _count: { select: { attendanceRecords: true } },
-    },
+  const [events, total] = await Promise.all([
+    prisma.event.findMany({
+      skip,
+      take: limit,
+      orderBy: { eventDate: 'desc' },
+      include: {
+        course: { select: { code: true, name: true } },
+        _count: { select: { attendanceRecords: true } },
+      },
+    }),
+    prisma.event.count(),
+  ]);
+
+  if (events.length === 0) return { data: [], total, page, limit };
+
+  const eventIds = events.map((e) => e.id);
+  const statusCounts = await prisma.attendanceRecord.groupBy({
+    by: ['eventId', 'status'],
+    where: { eventId: { in: eventIds } },
+    _count: true,
   });
 
-  const data = await Promise.all(events.map(async (event) => {
-    const totalRecords = event._count.attendanceRecords;
-    if (totalRecords === 0) {
-      return {
-        id: event.id,
-        title: event.title,
-        eventDate: event.eventDate,
-        course: event.course,
-        totalStudents: 0,
-        present: 0,
-        late: 0,
-        absent: 0,
-        attendanceRate: null,
-      };
-    }
+  const countMap = {};
+  for (const row of statusCounts) {
+    if (!countMap[row.eventId]) countMap[row.eventId] = { present: 0, late: 0, absent: 0 };
+    countMap[row.eventId][row.status] = row._count;
+  }
 
-    const [present, late, absent] = await Promise.all([
-      prisma.attendanceRecord.count({ where: { eventId: event.id, status: 'present' } }),
-      prisma.attendanceRecord.count({ where: { eventId: event.id, status: 'late' } }),
-      prisma.attendanceRecord.count({ where: { eventId: event.id, status: 'absent' } }),
-    ]);
+  const data = events.map((event) => {
+    const totalRecords = event._count.attendanceRecords;
+    const counts = countMap[event.id] || { present: 0, late: 0, absent: 0 };
 
     return {
       id: event.id,
@@ -41,60 +41,80 @@ async function attendanceByEvent(page = 1, limit = 20) {
       eventDate: event.eventDate,
       course: event.course,
       totalStudents: totalRecords,
-      present,
-      late,
-      absent,
-      attendanceRate: Math.round(((present + late) / totalRecords) * 100),
+      present: counts.present,
+      late: counts.late,
+      absent: counts.absent,
+      attendanceRate: totalRecords > 0
+        ? Math.round(((counts.present + counts.late) / totalRecords) * 100)
+        : null,
     };
-  }));
+  });
 
-  const total = await prisma.event.count();
   return { data, total, page, limit };
 }
 
-async function attendanceByCourse() {
-  const courses = await prisma.course.findMany({
-    include: { _count: { select: { events: true } } },
+async function attendanceByCourse(page = 1, limit = 20) {
+  const skip = (page - 1) * limit;
+
+  const [courses, total] = await Promise.all([
+    prisma.course.findMany({
+      skip,
+      take: limit,
+      orderBy: { code: 'asc' },
+      include: { _count: { select: { events: true } } },
+    }),
+    prisma.course.count(),
+  ]);
+
+  if (courses.length === 0) return { data: [], total, page, limit };
+
+  const courseIds = courses.map((c) => c.id);
+  const events = await prisma.event.findMany({
+    where: { courseId: { in: courseIds } },
+    select: { id: true, courseId: true },
   });
 
-  const data = await Promise.all(courses.map(async (course) => {
-    const totalRecords = await prisma.attendanceRecord.count({
-      where: { event: { courseId: course.id } },
-    });
+  const eventIds = events.map((e) => e.id);
+  const eventCourseMap = {};
+  for (const e of events) {
+    eventCourseMap[e.id] = e.courseId;
+  }
 
-    if (totalRecords === 0) {
-      return {
-        id: course.id,
-        code: course.code,
-        name: course.name,
-        totalEvents: course._count.events,
-        totalRecords: 0,
-        present: 0,
-        late: 0,
-        absent: 0,
-        attendanceRate: null,
-      };
-    }
+  const statusCounts = eventIds.length > 0
+    ? await prisma.attendanceRecord.groupBy({
+        by: ['eventId', 'status'],
+        where: { eventId: { in: eventIds } },
+        _count: true,
+      })
+    : [];
 
-    const [present, late] = await Promise.all([
-      prisma.attendanceRecord.count({ where: { event: { courseId: course.id }, status: 'present' } }),
-      prisma.attendanceRecord.count({ where: { event: { courseId: course.id }, status: 'late' } }),
-    ]);
+  const courseCounts = {};
+  for (const row of statusCounts) {
+    const cId = eventCourseMap[row.eventId];
+    if (!courseCounts[cId]) courseCounts[cId] = { total: 0, present: 0, late: 0 };
+    courseCounts[cId].total += row._count;
+    if (row.status === 'present') courseCounts[cId].present += row._count;
+    if (row.status === 'late') courseCounts[cId].late += row._count;
+  }
 
+  const data = courses.map((course) => {
+    const counts = courseCounts[course.id] || { total: 0, present: 0, late: 0 };
     return {
       id: course.id,
       code: course.code,
       name: course.name,
       totalEvents: course._count.events,
-      totalRecords,
-      present,
-      late,
-      absent: totalRecords - present - late,
-      attendanceRate: Math.round(((present + late) / totalRecords) * 100),
+      totalRecords: counts.total,
+      present: counts.present,
+      late: counts.late,
+      absent: counts.total - counts.present - counts.late,
+      attendanceRate: counts.total > 0
+        ? Math.round(((counts.present + counts.late) / counts.total) * 100)
+        : null,
     };
-  }));
+  });
 
-  return { data };
+  return { data, total, page, limit };
 }
 
 async function dashboard() {
@@ -136,33 +156,38 @@ async function dashboard() {
     },
   });
 
-  const attendanceTrend = await Promise.all(
-    recentEvents.map(async (event) => {
+  const eventIds = recentEvents.map((e) => e.id);
+  const statusCounts = eventIds.length > 0
+    ? await prisma.attendanceRecord.groupBy({
+        by: ['eventId', 'status'],
+        where: { eventId: { in: eventIds } },
+        _count: true,
+      })
+    : [];
+
+  const trendMap = {};
+  for (const row of statusCounts) {
+    if (!trendMap[row.eventId]) trendMap[row.eventId] = { present: 0, late: 0 };
+    if (row.status === 'present') trendMap[row.eventId].present = row._count;
+    if (row.status === 'late') trendMap[row.eventId].late = row._count;
+  }
+
+  const trend = recentEvents
+    .map((event) => {
       const totalRecords = event._count.attendanceRecords;
       if (totalRecords === 0) return null;
-
-      const [presentCount, lateCount] = await Promise.all([
-        prisma.attendanceRecord.count({
-          where: { eventId: event.id, status: 'present' },
-        }),
-        prisma.attendanceRecord.count({
-          where: { eventId: event.id, status: 'late' },
-        }),
-      ]);
-
+      const counts = trendMap[event.id] || { present: 0, late: 0 };
       return {
         date: event.eventDate.toISOString().split('T')[0],
         event: event.title,
-        presentRate: Math.round(((presentCount + lateCount) / totalRecords) * 100),
-        present: presentCount,
-        late: lateCount,
-        absent: totalRecords - presentCount - lateCount,
+        presentRate: Math.round(((counts.present + counts.late) / totalRecords) * 100),
+        present: counts.present,
+        late: counts.late,
+        absent: totalRecords - counts.present - counts.late,
         total: totalRecords,
       };
     })
-  );
-
-  const trend = attendanceTrend.filter(Boolean);
+    .filter(Boolean);
 
   // Recent attendance records for table
   const recentAttendance = await prisma.attendanceRecord.findMany({
@@ -206,4 +231,137 @@ async function dashboard() {
   };
 }
 
-module.exports = { attendanceByEvent, attendanceByCourse, dashboard };
+async function balanceReport(startDate, endDate, courseId, page = 1, limit = 20) {
+  const skip = (page - 1) * limit;
+  const where = {};
+  if (startDate || endDate) {
+    where.createdAt = {};
+    if (startDate) where.createdAt.gte = new Date(startDate);
+    if (endDate) where.createdAt.lte = new Date(endDate + 'T23:59:59.999Z');
+  }
+  if (courseId) where.student = { courseId };
+
+  const [data, total, aggregation] = await Promise.all([
+    prisma.balance.findMany({
+      where,
+      skip,
+      take: limit,
+      orderBy: { createdAt: 'desc' },
+      include: {
+        student: {
+          select: { firstName: true, lastName: true, studentId: true, course: { select: { code: true, name: true } } },
+        },
+      },
+    }),
+    prisma.balance.count({ where }),
+    prisma.balance.groupBy({
+      by: ['status'],
+      where,
+      _count: true,
+      _sum: { amount: true },
+    }),
+  ]);
+
+  const stats = { unpaid: 0, partial: 0, paid: 0, totalOutstanding: 0, totalCollected: 0 };
+  for (const row of aggregation) {
+    stats[row.status] = row._count;
+    if (row.status === 'unpaid' || row.status === 'partial') {
+      stats.totalOutstanding += Number(row._sum.amount);
+    } else {
+      stats.totalCollected += Number(row._sum.amount);
+    }
+  }
+
+  const rows = data.map((b) => ({
+    id: b.id,
+    studentName: `${b.student.firstName} ${b.student.lastName}`,
+    studentId: b.student.studentId,
+    course: b.student.course?.code ?? '',
+    description: b.description,
+    amount: Number(b.amount),
+    status: b.status,
+    dueDate: b.dueDate,
+    createdAt: b.createdAt,
+  }));
+
+  return { data: rows, total, page, limit, stats };
+}
+
+async function sanctionReport(startDate, endDate, type, courseId, page = 1, limit = 20) {
+  const skip = (page - 1) * limit;
+  const where = {};
+  if (startDate || endDate) {
+    where.triggeredAt = {};
+    if (startDate) where.triggeredAt.gte = new Date(startDate);
+    if (endDate) where.triggeredAt.lte = new Date(endDate + 'T23:59:59.999Z');
+  }
+  if (type) where.sanctionRule = { type };
+  if (courseId) where.student = { courseId };
+
+  const [data, total, ruleIdCounts] = await Promise.all([
+    prisma.sanction.findMany({
+      where,
+      skip,
+      take: limit,
+      orderBy: { triggeredAt: 'desc' },
+      include: {
+        student: {
+          select: { firstName: true, lastName: true, studentId: true, course: { select: { code: true, name: true } } },
+        },
+        sanctionRule: { select: { type: true, sanctionLevel: true } },
+      },
+    }),
+    prisma.sanction.count({ where }),
+    prisma.sanction.groupBy({
+      by: ['sanctionRuleId'],
+      where,
+      _count: true,
+    }),
+  ]);
+
+  const ruleIds = ruleIdCounts.map((r) => r.sanctionRuleId);
+  const rules = ruleIds.length > 0
+    ? await prisma.sanctionRule.findMany({
+        where: { id: { in: ruleIds } },
+        select: { id: true, type: true, sanctionLevel: true },
+      })
+    : [];
+
+  const ruleMap = {};
+  for (const r of rules) ruleMap[r.id] = r;
+
+  const bySeverity = {};
+  const byType = {};
+  for (const row of ruleIdCounts) {
+    const rule = ruleMap[row.sanctionRuleId];
+    if (rule) {
+      bySeverity[rule.sanctionLevel] = (bySeverity[rule.sanctionLevel] || 0) + row._count;
+      byType[rule.type] = (byType[rule.type] || 0) + row._count;
+    }
+  }
+
+  const rows = data.map((s) => ({
+    id: s.id,
+    studentName: `${s.student.firstName} ${s.student.lastName}`,
+    studentId: s.student.studentId,
+    course: s.student.course?.code ?? '',
+    type: s.sanctionRule.type,
+    sanctionLevel: s.sanctionRule.sanctionLevel,
+    status: s.status,
+    triggeredAt: s.triggeredAt,
+  }));
+
+  return {
+    data: rows,
+    total,
+    page,
+    limit,
+    stats: {
+      totalActive: data.filter((s) => s.status === 'active').length,
+      bySeverity: Object.entries(bySeverity).map(([level, count]) => ({ level, count })),
+      byType: Object.entries(byType).map(([typeVal, count]) => ({ type: typeVal, count })),
+    },
+  };
+}
+
+module.exports = { attendanceByEvent, attendanceByCourse, dashboard, balanceReport, sanctionReport };

@@ -41,7 +41,7 @@ function DatePicker({ value, onChange, className, placeholder = 'Select date', m
 
   const selected = value ? new Date(value + 'T00:00:00') : null
   const today = useMemo(() => { const d = new Date(); d.setHours(0, 0, 0, 0); return d }, [])
-  const min = useMemo(() => minDate ? new Date(minDate + 'T00:00:00') : today, [minDate, today])
+  const min = useMemo(() => minDate ? new Date(minDate + 'T00:00:00') : null, [minDate])
 
   const [viewYear, setViewYear] = useState(selected ? selected.getFullYear() : today.getFullYear())
   const [viewMonth, setViewMonth] = useState(selected ? selected.getMonth() : today.getMonth())

@@ -285,7 +285,7 @@
 .divider {
   height: 1px;
   background: rgba(15, 32, 39, 0.08);
-  margin: var(--space-5) 0 0;
+  margin: var(--space-4) 0 0;
   border: none;
 }
 

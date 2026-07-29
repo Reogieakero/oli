@@ -4,7 +4,8 @@ async function list(req, res, next) {
   try {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 20;
-    const result = await courseService.listCourses(page, limit);
+    const search = req.query.search || undefined;
+    const result = await courseService.listCourses(page, limit, search);
     res.json(result);
   } catch (err) {
     next(err);
