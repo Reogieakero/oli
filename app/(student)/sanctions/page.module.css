@@ -1,0 +1,131 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.title {
+  font-family: var(--font-heading);
+  font-size: var(--text-2xl);
+  font-weight: 700;
+  margin: 0;
+}
+
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 0;
+}
+
+.sectionTitle {
+  font-family: var(--font-heading);
+  font-size: var(--text-lg);
+  font-weight: 600;
+  margin: 0;
+}
+
+.subTitle {
+  font-family: var(--font-heading);
+  font-size: var(--text-base);
+  font-weight: 600;
+  margin: 0;
+}
+
+.cardGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+  gap: 12px;
+}
+
+.sancBadge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 52px;
+  padding: 10px;
+  border-radius: var(--radius-control);
+  align-self: flex-start;
+}
+
+.sancBadgeDanger {
+  background: var(--color-status-danger-bg);
+  color: var(--color-status-danger);
+}
+
+.sancBadgeWarning {
+  background: var(--color-status-warning-bg);
+  color: var(--color-status-warning);
+}
+
+.cardDateBadge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 52px;
+  padding: 6px 10px;
+  background: var(--color-brand-dark);
+  color: #fff;
+  border-radius: var(--radius-control);
+  align-self: flex-start;
+}
+
+.cardDateMonth {
+  font-size: 10px;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+.cardDateDay {
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.cardBody {
+  display: flex;
+  gap: 12px;
+  height: 120px;
+}
+
+.cardContent {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.cardHeader {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.cardTitle {
+  font-weight: 600;
+  font-size: var(--text-sm);
+}
+
+.cardMeta {
+  font-size: var(--text-xs);
+  color: var(--color-muted-fg);
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.emptyState {
+  padding: 24px;
+  text-align: center;
+  color: var(--color-muted-fg);
+  font-size: var(--text-sm);
+}

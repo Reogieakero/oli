@@ -132,7 +132,7 @@ export default function AdminCoursesPage() {
   const fetchAttendance = useCallback(async () => {
     try {
       const result = await apiClient<{ data: CourseAttendance[] }>(
-        `/reports/courses?page=${currentPage}&limit=${PAGE_SIZE}`,
+        '/reports/courses?limit=1000',
         { authenticated: true }
       )
       const map = new Map<string, CourseAttendance>()
@@ -143,7 +143,7 @@ export default function AdminCoursesPage() {
     } catch {
       /* silently fail */
     }
-  }, [currentPage])
+  }, [])
 
   useEffect(() => {
     fetchCourses()

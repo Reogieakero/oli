@@ -38,7 +38,8 @@ async function balanceReport(req, res, next) {
     const startDate = req.query.startDate || undefined;
     const endDate = req.query.endDate || undefined;
     const courseId = req.query.courseId || undefined;
-    const result = await reportService.balanceReport(startDate, endDate, courseId, page, limit);
+    const status = req.query.status || undefined;
+    const result = await reportService.balanceReport(startDate, endDate, courseId, status, page, limit);
     res.json(result);
   } catch (err) {
     next(err);
@@ -53,7 +54,8 @@ async function sanctionReport(req, res, next) {
     const endDate = req.query.endDate || undefined;
     const type = req.query.type || undefined;
     const courseId = req.query.courseId || undefined;
-    const result = await reportService.sanctionReport(startDate, endDate, type, courseId, page, limit);
+    const status = req.query.status || undefined;
+    const result = await reportService.sanctionReport(startDate, endDate, type, courseId, status, page, limit);
     res.json(result);
   } catch (err) {
     next(err);

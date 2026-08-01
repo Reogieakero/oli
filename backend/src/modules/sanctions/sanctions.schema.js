@@ -2,6 +2,7 @@ const { z } = require('zod');
 
 const createSanctionRuleSchema = z.object({
   body: z.object({
+    type: z.enum(['absence', 'late']).default('absence'),
     absenceThreshold: z.number().int().min(1),
     sanctionLevel: z.string().min(1).max(50),
     description: z.string().optional(),
@@ -10,6 +11,7 @@ const createSanctionRuleSchema = z.object({
 
 const updateSanctionRuleSchema = z.object({
   body: z.object({
+    type: z.enum(['absence', 'late']).optional(),
     absenceThreshold: z.number().int().min(1).optional(),
     sanctionLevel: z.string().min(1).max(50).optional(),
     description: z.string().nullable().optional(),

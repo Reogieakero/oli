@@ -23,16 +23,18 @@ async function listAnnouncements(user, query = {}) {
     const student = await prisma.student.findUnique({ where: { userId: user.sub } });
     if (student) {
       where = {
+        status: 'published',
         OR: [
           { isGeneral: true },
           { courseId: student.courseId, targetYearLevel: student.yearLevel },
           { courseId: student.courseId, targetYearLevel: null },
+          { courseId: null, targetYearLevel: null },
         ],
       };
     }
   }
 
-  if (status) where.status = status;
+  if (status && user.role !== 'student') where.status = status;
   if (courseId) where.courseId = courseId;
   if (search) where.title = { contains: search, mode: 'insensitive' };
   if (startDate || endDate) {
@@ -145,7 +147,7 @@ async function createAnnouncement(userId, userEmail, data, files = []) {
   return announcement;
 }
 
-async function updateAnnouncement(id, facultyId, data) {
+async function updateAnnouncement(id, facultyId, data, files = []) {
   const existing = await prisma.announcement.findUnique({ where: { id } });
   if (!existing) throw new NotFoundError('Announcement not found');
 
@@ -159,14 +161,42 @@ async function updateAnnouncement(id, facultyId, data) {
   if (data.publishAt !== undefined) updateData.publishAt = data.publishAt ? new Date(data.publishAt) : null;
   if (data.expiresAt !== undefined) updateData.expiresAt = data.expiresAt ? new Date(data.expiresAt) : null;
 
-  return prisma.announcement.update({
-    where: { id },
-    data: updateData,
-    include: {
-      attachments: true,
-      course: { select: { id: true, code: true, name: true } },
-      faculty: { select: { fullName: true } },
-    },
+  return prisma.$transaction(async (tx) => {
+    const updated = await tx.announcement.update({
+      where: { id },
+      data: updateData,
+    });
+
+    if (files.length > 0) {
+      await ensureBucket();
+      const attachments = [];
+      for (const file of files) {
+        const filePath = `announcements/${updated.id}/${Date.now()}_${file.originalname}`;
+        const { error: uploadError } = await supabase.storage
+          .from(ATTACHMENT_BUCKET)
+          .upload(filePath, file.buffer, { contentType: file.mimetype });
+
+        if (uploadError) throw new Error(`File upload failed: ${uploadError.message}`);
+
+        attachments.push({
+          announcementId: updated.id,
+          fileName: file.originalname,
+          fileUrl: filePath,
+          fileSize: file.size,
+          mimeType: file.mimetype,
+        });
+      }
+      await tx.announcementAttachment.createMany({ data: attachments });
+    }
+
+    return tx.announcement.findUnique({
+      where: { id: updated.id },
+      include: {
+        attachments: true,
+        course: { select: { id: true, code: true, name: true } },
+        faculty: { select: { fullName: true } },
+      },
+    });
   });
 }
 
@@ -200,7 +230,7 @@ async function markAsRead(announcementId, studentId) {
   if (!announcement) throw new NotFoundError('Announcement not found');
 
   await prisma.announcementRead.upsert({
-    where: { announcementId_studentId: { announcementId, studentId } },
+    where: { uq_announcement_read: { announcementId, studentId } },
     update: { readAt: new Date() },
     create: { announcementId, studentId },
   });

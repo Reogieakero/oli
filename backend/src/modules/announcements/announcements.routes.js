@@ -10,6 +10,7 @@ const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 
 const router = Router();
 
 router.get('/', authenticate, controller.list);
+router.get('/attachments/:fileUrl', authenticate, controller.getAttachmentUrl);
 router.get('/:id', authenticate, controller.getById);
 router.post(
   '/',
@@ -19,10 +20,9 @@ router.post(
   validate(createAnnouncementSchema),
   controller.create
 );
-router.put('/:id', authenticate, authorize('faculty'), validate(updateAnnouncementSchema), controller.update);
+router.put('/:id', authenticate, authorize('faculty'), upload.array('attachments', 10), validate(updateAnnouncementSchema), controller.update);
 router.patch('/:id/archive', authenticate, authorize('faculty'), controller.archive);
 router.delete('/:id', authenticate, authorize('faculty'), controller.remove);
-router.get('/attachments/:fileUrl', authenticate, controller.getAttachmentUrl);
 router.post('/:id/read', authenticate, controller.markRead);
 router.get('/:id/reads', authenticate, controller.readCount);
 

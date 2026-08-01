@@ -1,0 +1,148 @@
+.page {
+  position: relative;
+  isolation: isolate;
+}
+
+.blobCircles {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+}
+
+/* center sonar rings */
+.blobCircles::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 800px;
+  height: 800px;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  background:
+    repeating-radial-gradient(
+      circle,
+      rgba(64, 165, 190, 0.2) 0px,
+      rgba(64, 165, 190, 0.15) 1px,
+      transparent 1px,
+      transparent 64px
+    );
+  mask-image: radial-gradient(circle, black 0%, black 50%, transparent 78%);
+  -webkit-mask-image: radial-gradient(circle, black 0%, black 50%, transparent 78%);
+  animation: pulseRings 12s ease-in-out infinite;
+}
+
+/* drifting blob top-right */
+.blobCircles::after {
+  content: '';
+  position: absolute;
+  top: 10%;
+  right: 3%;
+  width: 400px;
+  height: 400px;
+  border-radius: 42% 58% 63% 37% / 41% 44% 56% 59%;
+  background: linear-gradient(135deg, rgba(64, 165, 190, 0.2), rgba(191, 227, 246, 0.15));
+  filter: blur(50px);
+  animation: driftBlob 20s ease-in-out infinite alternate;
+}
+
+/* left sonar blob */
+.blobLeft {
+  position: absolute;
+  top: 60%;
+  left: -120px;
+  width: 500px;
+  height: 500px;
+  border-radius: 50%;
+  background:
+    repeating-radial-gradient(
+      circle,
+      rgba(64, 165, 190, 0.18) 0px,
+      rgba(64, 165, 190, 0.12) 1px,
+      transparent 1px,
+      transparent 48px
+    );
+  mask-image: radial-gradient(circle, black 0%, black 40%, transparent 70%);
+  -webkit-mask-image: radial-gradient(circle, black 0%, black 40%, transparent 70%);
+  animation: pulseRingLeft 10s ease-in-out infinite reverse;
+}
+
+.blobLeft::after {
+  content: '';
+  position: absolute;
+  inset: 20%;
+  border-radius: 50%;
+  background: linear-gradient(225deg, rgba(64, 165, 190, 0.15), rgba(191, 227, 246, 0.08));
+  filter: blur(30px);
+  animation: driftBlob 15s ease-in-out infinite alternate;
+}
+
+/* right sonar blob */
+.blobRight {
+  position: absolute;
+  bottom: 10%;
+  right: -100px;
+  width: 450px;
+  height: 450px;
+  border-radius: 50%;
+  background:
+    repeating-radial-gradient(
+      circle,
+      rgba(64, 165, 190, 0.18) 0px,
+      rgba(64, 165, 190, 0.12) 1px,
+      transparent 1px,
+      transparent 56px
+    );
+  mask-image: radial-gradient(circle, black 0%, black 45%, transparent 72%);
+  -webkit-mask-image: radial-gradient(circle, black 0%, black 45%, transparent 72%);
+  animation: pulseRingRight 14s ease-in-out infinite 2s;
+}
+
+.blobRight::after {
+  content: '';
+  position: absolute;
+  inset: 15%;
+  border-radius: 50%;
+  background: linear-gradient(45deg, rgba(64, 165, 190, 0.12), rgba(191, 227, 246, 0.1));
+  filter: blur(35px);
+  animation: driftBlob 18s ease-in-out infinite alternate-reverse;
+}
+
+@keyframes pulseRings {
+  0%, 100% { opacity: 0.5; transform: translate(-50%, -50%) scale(1); }
+  50% { opacity: 0.8; transform: translate(-50%, -50%) scale(1.04); }
+}
+
+@keyframes pulseRingLeft {
+  0%, 100% { opacity: 0.4; transform: scale(1); }
+  50% { opacity: 0.7; transform: scale(1.05); }
+}
+
+@keyframes pulseRingRight {
+  0%, 100% { opacity: 0.4; transform: scale(1); }
+  50% { opacity: 0.7; transform: scale(1.05); }
+}
+
+@keyframes driftBlob {
+  0% { transform: translate(0, 0); }
+  100% { transform: translate(-30px, 20px); }
+}
+
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+
+@media (max-width: 640px) {
+  .statsGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.content {
+  position: relative;
+  z-index: 1;
+}

@@ -1,0 +1,105 @@
+.page {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 12;
+}
+
+.backLink {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--color-muted-fg);
+  font-size: var(--text-sm);
+  text-decoration: none;
+}
+
+.title {
+  font-family: var(--font-heading);
+  font-size: var(--text-xl);
+  font-weight: 700;
+  margin: 0;
+}
+
+.tabs {
+  display: flex;
+  gap: 8px;
+  border-bottom: 1px solid var(--color-border);
+  padding-bottom: 8px;
+}
+
+.tab {
+  padding: 6px 14px;
+  border-radius: var(--radius-control);
+  border: 1px solid transparent;
+  background: transparent;
+  font-size: var(--text-sm);
+  font-weight: 500;
+  cursor: pointer;
+  color: var(--color-muted-fg);
+  transition: all 0.15s;
+}
+
+.tabActive {
+  border-color: var(--color-brand-dark);
+  background: var(--color-brand-dark);
+  color: #fff;
+}
+
+.card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding: 14px 18px;
+  background: #fff;
+  border-radius: var(--radius-control);
+  border: 1px solid var(--color-border);
+}
+
+.cardProcessed {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding: 12px 16px;
+  background: var(--color-muted-bg);
+  border-radius: var(--radius-control);
+  border: 1px solid var(--color-border);
+  opacity: 0.8;
+}
+
+.info {
+  flex: 1;
+  min-width: 220px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: var(--text-sm);
+}
+
+.name {
+  font-weight: 600;
+}
+
+.details {
+  color: var(--color-muted-fg);
+}
+
+.actions {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.empty {
+  padding: 40px;
+  text-align: center;
+  color: var(--color-muted-fg);
+}

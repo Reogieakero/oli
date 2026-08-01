@@ -28,13 +28,18 @@ async function listBalances(user, page = 1, limit = 20, filters = {}) {
   }
 
   const orderBy = {};
+  const sortOrder = filters.sortOrder || 'asc';
   if (filters.sortBy === 'studentName') {
-    orderBy.student = { firstName: filters.sortOrder || 'asc' };
+    orderBy.student = { firstName: sortOrder };
+  } else if (filters.sortBy === 'studentId') {
+    orderBy.student = { studentId: sortOrder };
+  } else if (filters.sortBy === 'course') {
+    orderBy.student = { course: { name: sortOrder } };
   } else if (filters.sortBy === 'totalPaid') {
     // Can't sort by computed field via Prisma; fallback
     orderBy.createdAt = 'desc';
   } else if (filters.sortBy) {
-    orderBy[filters.sortBy] = filters.sortOrder || 'asc';
+    orderBy[filters.sortBy] = sortOrder;
   } else {
     orderBy.createdAt = 'desc';
   }
@@ -48,17 +53,25 @@ async function listBalances(user, page = 1, limit = 20, filters = {}) {
       include: {
         student: { select: { id: true, firstName: true, lastName: true, studentId: true, course: { select: { id: true, code: true, name: true } } } },
         payments: {
-          select: { id: true, amount: true, referenceNo: true, paidAt: true, notes: true, paymentMethod: { select: { name: true } } },
+          select: { id: true, amount: true, status: true, referenceNo: true, paidAt: true, notes: true, paymentMethod: { select: { name: true } } },
           orderBy: { paidAt: 'desc' },
         },
       },
     }),
     prisma.balance.count({ where }),
-    prisma.balance.aggregate({
-      _sum: { amount: true },
+    prisma.balance.findMany({
       where: { status: { in: ['unpaid', 'partial'] } },
+      select: {
+        amount: true,
+        payments: { where: { status: 'approved' }, select: { amount: true } },
+      },
     }),
   ]);
+
+  const netOutstanding = summary.reduce(
+    (sum, b) => sum + (Number(b.amount) - b.payments.reduce((s, p) => s + Number(p.amount), 0)),
+    0,
+  );
 
   const [unpaidCount, partialCount, paidCount, overdueCount] = await Promise.all([
     prisma.balance.count({ where: { ...where, status: 'unpaid' } }),
@@ -73,7 +86,7 @@ async function listBalances(user, page = 1, limit = 20, filters = {}) {
     page,
     limit,
     summary: {
-      totalOutstanding: Number(summary._sum.amount) || 0,
+      totalOutstanding: Math.max(0, netOutstanding),
       unpaid: unpaidCount,
       partial: partialCount,
       paid: paidCount,
@@ -88,7 +101,7 @@ async function getBalance(id) {
     include: {
       student: { select: { id: true, firstName: true, lastName: true, studentId: true, course: { select: { id: true, code: true, name: true } } } },
       payments: {
-        select: { id: true, amount: true, referenceNo: true, paidAt: true, notes: true, paymentMethod: { select: { name: true } }, recordedBy: true },
+        select: { id: true, amount: true, status: true, referenceNo: true, paidAt: true, notes: true, paymentMethod: { select: { name: true } }, recordedBy: true },
         orderBy: { paidAt: 'desc' },
       },
     },

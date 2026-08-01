@@ -139,7 +139,7 @@ export default function AdminReportsPage() {
   useEffect(() => {
     async function loadCourses() {
       try {
-        const res = await apiClient<{ data: CourseOption[] }>('/courses?limit=20', { authenticated: true })
+        const res = await apiClient<{ data: CourseOption[] }>('/courses?limit=1000', { authenticated: true })
         setCourseOptions(res.data.map((c) => ({ value: c.id, label: c.code })))
       } catch { /* ignore */ }
     }
@@ -198,6 +198,7 @@ export default function AdminReportsPage() {
         if (endDate) params.set('endDate', endDate)
         if (courseId) params.set('courseId', courseId)
         if (typeFilter) params.set('type', typeFilter)
+        if (statusFilter) params.set('status', statusFilter)
         params.set('page', '1')
         params.set('limit', '20')
         const result = await apiClient<SanctionReportData>(`/reports/sanctions-stats?${params.toString()}`, { authenticated: true })
@@ -233,6 +234,7 @@ export default function AdminReportsPage() {
         if (endDate) params.set('endDate', endDate)
         if (courseId) params.set('courseId', courseId)
         if (typeFilter) params.set('type', typeFilter)
+        if (statusFilter) params.set('status', statusFilter)
         params.set('page', String(newPage))
         params.set('limit', '20')
         const result = await apiClient<SanctionReportData>(`/reports/sanctions-stats?${params.toString()}`, { authenticated: true })

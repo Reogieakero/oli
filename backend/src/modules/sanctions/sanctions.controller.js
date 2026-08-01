@@ -54,6 +54,7 @@ async function listAll(req, res, next) {
     if (req.query.search) filters.search = req.query.search;
     if (req.query.status) filters.status = req.query.status;
     if (req.query.sanctionLevel) filters.sanctionLevel = req.query.sanctionLevel;
+    if (req.query.type) filters.type = req.query.type;
     const result = await sanctionService.listSanctions(page, limit, filters);
     res.json(result);
   } catch (err) {
@@ -137,6 +138,7 @@ async function exportAll(req, res, next) {
     if (req.query.startDate) filters.startDate = req.query.startDate;
     if (req.query.endDate) filters.endDate = req.query.endDate;
     if (req.query.search) filters.search = req.query.search;
+    if (req.query.type) filters.type = req.query.type;
     const rows = await sanctionService.exportSanctions(filters);
     res.json({ data: rows });
   } catch (err) {

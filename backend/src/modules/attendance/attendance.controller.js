@@ -2,8 +2,8 @@ const attendanceService = require('./attendance.service');
 
 async function activateSession(req, res, next) {
   try {
-    const event = await attendanceService.validatePasscode(req.parsed.body.passcode);
-    res.json({ eventId: event.id, title: event.title, valid: true });
+    const result = await attendanceService.activateEvent(req.parsed.body.passcode);
+    res.json(result);
   } catch (err) {
     next(err);
   }
@@ -14,7 +14,8 @@ async function scan(req, res, next) {
     const result = await attendanceService.scanAttendance(
       req.parsed.body.passcode,
       req.parsed.body.qrCodeToken,
-      req.parsed.body.scannerDeviceId
+      req.parsed.body.scannerDeviceId,
+      req.parsed.body.scannedAt
     );
     res.json(result);
   } catch (err) {

@@ -77,6 +77,14 @@ interface EventOption {
   course: { id: string; code: string } | null
 }
 
+interface ScanResult {
+  student: { id: string; firstName: string; lastName: string; studentId: string }
+  status: 'present' | 'late'
+  scannedAt: string
+  absenceCount: number
+  sanction: { id: string; level: string } | null
+}
+
 type AttendanceStatus = 'present' | 'late' | 'absent'
 
 const STATUS_BADGE: Record<string, 'success' | 'warning' | 'danger'> = {
@@ -152,6 +160,15 @@ export default function AdminAttendancePage() {
   const [addReason, setAddReason] = useState('')
   const [addSubmitting, setAddSubmitting] = useState(false)
   const [addError, setAddError] = useState('')
+
+  const [scanOpen, setScanOpen] = useState(false)
+  const [scanPasscode, setScanPasscode] = useState('')
+  const [scanActiveEvent, setScanActiveEvent] = useState<{ eventId: string; title: string } | null>(null)
+  const [scanToken, setScanToken] = useState('')
+  const [scanResult, setScanResult] = useState<ScanResult | null>(null)
+  const [scanError, setScanError] = useState('')
+  const [scanActivating, setScanActivating] = useState(false)
+  const [scanSubmitting, setScanSubmitting] = useState(false)
 
   const columnDefs: Column<AttendanceRecord>[] = useMemo(() => [
     {
@@ -268,7 +285,7 @@ export default function AdminAttendancePage() {
     try {
       const [eventsResult, coursesResult] = await Promise.all([
         apiClient<{ data: EventOption[] }>('/events?limit=20', { authenticated: true }),
-        apiClient<{ data: { id: string; code: string; name: string }[] }>('/courses?limit=20', { authenticated: true }),
+        apiClient<{ data: { id: string; code: string; name: string }[] }>('/courses?limit=1000', { authenticated: true }),
       ])
       setEvents(eventsResult.data)
       setCourses([
@@ -451,6 +468,62 @@ export default function AdminAttendancePage() {
     }
   }, [addStudentId, addEventId, addStatus, addReason, toast, fetchRecords])
 
+  const handleScanOpen = useCallback(() => {
+    setScanOpen(true)
+    setScanPasscode('')
+    setScanActiveEvent(null)
+    setScanToken('')
+    setScanResult(null)
+    setScanError('')
+  }, [])
+
+  const handleActivate = useCallback(async () => {
+    if (scanPasscode.length !== 6) {
+      setScanError('Passcode must be exactly 6 characters')
+      return
+    }
+    setScanActivating(true)
+    setScanError('')
+    try {
+      const result = await apiClient<{ eventId: string; title: string; valid: boolean }>(
+        '/attendance/activate',
+        { method: 'POST', body: { passcode: scanPasscode } }
+      )
+      setScanActiveEvent({ eventId: result.eventId, title: result.title })
+      setScanResult(null)
+    } catch (err) {
+      setScanError(err instanceof Error ? err.message : 'Invalid passcode')
+    } finally {
+      setScanActivating(false)
+    }
+  }, [scanPasscode])
+
+  const handleScanSubmit = useCallback(async () => {
+    if (!scanActiveEvent || !scanToken.trim()) return
+    setScanSubmitting(true)
+    setScanError('')
+    try {
+      const result = await apiClient<ScanResult>(
+        '/attendance/scan',
+        {
+          method: 'POST',
+          body: {
+            passcode: scanPasscode,
+            qrCodeToken: scanToken.trim(),
+            scannerDeviceId: 'admin-web',
+          },
+        }
+      )
+      setScanResult(result)
+      setScanToken('')
+      fetchRecords()
+    } catch (err) {
+      setScanError(err instanceof Error ? err.message : 'Scan failed')
+    } finally {
+      setScanSubmitting(false)
+    }
+  }, [scanActiveEvent, scanPasscode, scanToken, fetchRecords])
+
   const handleSortChange = useCallback((sort: { key: string; direction: 'asc' | 'desc' } | null) => {
     if (!sort) {
       setSortBy('createdAt')
@@ -498,6 +571,7 @@ export default function AdminAttendancePage() {
       <div className={styles.header}>
         <h1 className={styles.title}>Attendance</h1>
         <div className={styles.headerRight}>
+          <Button variant="outline" onClick={handleScanOpen}>Scan</Button>
           <Button onClick={() => { fetchStudents(); setAddOpen(true) }}>Add Record</Button>
         </div>
       </div>
@@ -821,6 +895,76 @@ export default function AdminAttendancePage() {
             <Input value={addReason} onChange={(e) => setAddReason(e.target.value)} placeholder="Reason for manual addition" />
           </div>
         </form>
+      </Dialog>
+
+      {/* Scan Attendance Dialog */}
+      <Dialog
+        open={scanOpen}
+        onClose={() => setScanOpen(false)}
+        title="Scan Attendance"
+        bodyClassName={styles.addDialogBody}
+        footer={
+          <div className={styles.dialogFooter}>
+            <Button variant="outline" onClick={() => setScanOpen(false)}>Close</Button>
+            {scanActiveEvent && (
+              <Button onClick={handleScanSubmit} disabled={scanSubmitting || !scanToken.trim()}>
+                {scanSubmitting && <span className={styles.spinner} />}
+                {scanSubmitting ? 'Recording...' : 'Record Scan'}
+              </Button>
+            )}
+          </div>
+        }
+      >
+        <div className={styles.addForm}>
+          {scanError && (
+            <div style={{ color: 'var(--color-danger)', fontSize: 13, padding: '8px 12px', background: 'var(--color-danger-bg)', borderRadius: 6 }}>
+              {scanError}
+            </div>
+          )}
+          {!scanActiveEvent ? (
+            <div className={styles.field}>
+              <label className={styles.label}>Event Passcode</label>
+              <Input
+                value={scanPasscode}
+                onChange={(e) => setScanPasscode(e.target.value)}
+                placeholder="Enter 6-character event passcode"
+                maxLength={6}
+              />
+              <Button onClick={handleActivate} disabled={scanActivating || scanPasscode.length !== 6}>
+                {scanActivating && <span className={styles.spinner} />}
+                {scanActivating ? 'Activating...' : 'Activate'}
+              </Button>
+              <p className={styles.muted}>Students display their attendance QR code from their dashboard or profile.</p>
+            </div>
+          ) : (
+            <>
+              <div className={styles.detailRowPro}>
+                <span className={styles.detailLabelPro}>Active Event</span>
+                <span className={styles.detailValuePro}>{scanActiveEvent.title}</span>
+              </div>
+              <div className={styles.field}>
+                <label className={styles.label}>Student QR Token</label>
+                <Input
+                  value={scanToken}
+                  onChange={(e) => setScanToken(e.target.value)}
+                  placeholder="Enter or paste the student's QR token"
+                />
+              </div>
+              {scanResult && (
+                <div className={styles.scanResult}>
+                  <div className={styles.scanResultName}>
+                    {scanResult.student.firstName} {scanResult.student.lastName}
+                    <Badge variant={STATUS_BADGE[scanResult.status]}>{scanResult.status}</Badge>
+                  </div>
+                  <div className={styles.muted}>{scanResult.student.studentId}</div>
+                  {scanResult.sanction ? (
+                    <div className={styles.scanResultSanction}>Sanction: {scanResult.sanction.level}</div>
+                  ) : null}
+                </div>
+              )}
+            </>
+          )}
+        </div>
       </Dialog>
     </div>
   )

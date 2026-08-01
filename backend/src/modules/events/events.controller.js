@@ -59,4 +59,13 @@ async function getCoverUrl(req, res, next) {
   }
 }
 
-module.exports = { list, getById, create, update, remove, getCoverUrl };
+async function finalize(req, res, next) {
+  try {
+    const result = await eventService.finalizeEvent(req.params.id);
+    res.json(result);
+  } catch (err) {
+    next(err);
+  }
+}
+
+module.exports = { list, getById, create, update, remove, getCoverUrl, finalize };

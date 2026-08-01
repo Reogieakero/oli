@@ -14,7 +14,7 @@ async function ensureBucket() {
 async function listAuditFiles(params = {}) {
   const page = parseInt(params.page) || 1;
   const limit = parseInt(params.limit) || 20;
-  const { search, category, courseId, sortBy, sortOrder } = params;
+  const { search, category, courseId, startDate, endDate, sortBy, sortOrder } = params;
   const skip = (page - 1) * limit;
 
   const where = {};
@@ -24,6 +24,11 @@ async function listAuditFiles(params = {}) {
   ];
   if (category) where.category = category;
   if (courseId) where.courseId = courseId;
+  if (startDate || endDate) {
+    where.createdAt = {};
+    if (startDate) where.createdAt.gte = new Date(startDate);
+    if (endDate) where.createdAt.lte = new Date(endDate + 'T23:59:59.999Z');
+  }
 
   const orderBy = {};
   orderBy[sortBy || 'createdAt'] = sortOrder || 'desc';

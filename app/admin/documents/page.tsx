@@ -5,6 +5,7 @@ import { apiClient, ApiError } from '@/lib/apiClient'
 import { Button } from '@/components/ui/Button/Button'
 import { Badge } from '@/components/ui/Badge/Badge'
 import { SearchBar } from '@/components/ui/SearchBar/SearchBar'
+import { DatePicker } from '@/components/ui/DatePicker/DatePicker'
 import { Select, type SelectOption } from '@/components/ui/Select/Select'
 import { Input } from '@/components/ui/Input/Input'
 import { DataTable, type Column } from '@/components/ui/DataTable/DataTable'
@@ -80,6 +81,10 @@ export default function AdminDocumentsPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [filterCategory, setFilterCategory] = useState('')
   const [filterCourse, setFilterCourse] = useState('')
+  const [filterFromDate, setFilterFromDate] = useState('')
+  const [filterToDate, setFilterToDate] = useState('')
+  const [sortBy, setSortBy] = useState('')
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc')
   const [courseOptions, setCourseOptions] = useState<SelectOption[]>([])
   const [courseMap, setCourseMap] = useState<Map<string, CourseOption>>(new Map())
 
@@ -104,7 +109,7 @@ export default function AdminDocumentsPage() {
   const limit = 20
 
   useEffect(() => {
-    apiClient<{ data: CourseOption[] }>('/courses', { authenticated: true })
+    apiClient<{ data: CourseOption[] }>('/courses?limit=1000', { authenticated: true })
       .then((res) => {
         const options: SelectOption[] = (res.data || []).map((c) => ({ value: c.id, label: c.name }))
         setCourseOptions(options)
@@ -124,6 +129,9 @@ export default function AdminDocumentsPage() {
       if (searchQuery) params.set('search', searchQuery)
       if (filterCategory) params.set('category', filterCategory)
       if (filterCourse) params.set('courseId', filterCourse)
+      if (filterFromDate) params.set('startDate', filterFromDate)
+      if (filterToDate) params.set('endDate', filterToDate)
+      if (sortBy) { params.set('sortBy', sortBy); params.set('sortOrder', sortOrder) }
 
       const result = await apiClient<{ data: DocumentRow[]; total: number; page: number; limit: number }>(`/audit-files?${params.toString()}`, { authenticated: true })
       setData(result.data)
@@ -133,7 +141,7 @@ export default function AdminDocumentsPage() {
     } finally {
       setLoading(false)
     }
-  }, [page, searchQuery, filterCategory, filterCourse, toast])
+  }, [page, searchQuery, filterCategory, filterCourse, filterFromDate, filterToDate, sortBy, sortOrder, toast])
 
   useEffect(() => {
     fetchData()
@@ -143,6 +151,17 @@ export default function AdminDocumentsPage() {
     setSearchQuery(value)
     if (searchTimerRef.current) clearTimeout(searchTimerRef.current)
     searchTimerRef.current = setTimeout(() => setPage(1), 250)
+  }, [])
+
+  const handleSortChange = useCallback((sort: { key: string; direction: 'asc' | 'desc' } | null) => {
+    if (sort) {
+      setSortBy(sort.key)
+      setSortOrder(sort.direction)
+    } else {
+      setSortBy('')
+      setSortOrder('asc')
+    }
+    setPage(1)
   }, [])
 
   const pageCount = Math.max(1, Math.ceil(total / limit))
@@ -309,6 +328,8 @@ export default function AdminDocumentsPage() {
           placeholder="All Courses"
           className={styles.filterSelect}
         />
+        <DatePicker value={filterFromDate} onChange={(v) => { setFilterFromDate(v); setPage(1) }} placeholder="From date" className={styles.filterDate} />
+        <DatePicker value={filterToDate} onChange={(v) => { setFilterToDate(v); setPage(1) }} placeholder="To date" className={styles.filterDate} />
       </div>
 
       <DataTable
@@ -316,6 +337,8 @@ export default function AdminDocumentsPage() {
         data={data}
         getRowId={(r) => r.id}
         loading={loading}
+        sortState={sortBy ? { key: sortBy, direction: sortOrder } : null}
+        onSortChange={handleSortChange}
         emptyState={<div className={styles.empty}>No documents found. Upload your first document.</div>}
         pagination={data.length > 0 ? { page, pageCount, onPageChange: setPage } : undefined}
         onRowClick={(r) => setDetailRecord(r)}

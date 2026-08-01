@@ -84,12 +84,24 @@ const DETAIL_TABS: Tab[] = [
 
 function getStatus(eventDate: string): 'upcoming' | 'today' | 'completed' {
   const today = new Date()
-  const date = new Date(eventDate)
+  const date = parseLocalDate(eventDate)
   today.setHours(0, 0, 0, 0)
   date.setHours(0, 0, 0, 0)
   if (date.getTime() === today.getTime()) return 'today'
   if (date > today) return 'upcoming'
   return 'completed'
+}
+
+function parseLocalDate(value: string): Date {
+  const parts = value.split('T')[0].split('-').map(Number)
+  if (parts.length === 3) return new Date(parts[0], parts[1] - 1, parts[2])
+  return new Date(value)
+}
+
+function toTimeInput(value: string): string {
+  if (!value) return ''
+  const t = value.includes('T') ? value.split('T')[1] : value
+  return t.slice(0, 5)
 }
 
 const STATUS_BADGE: Record<string, 'success' | 'warning' | 'neutral'> = {
@@ -149,6 +161,8 @@ export default function AdminEventsPage() {
   const [statusFilter, setStatusFilter] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
   const [totalEvents, setTotalEvents] = useState(0)
+  const [sortBy, setSortBy] = useState('')
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc')
 
   const [formOpen, setFormOpen] = useState(false)
   const [formStep, setFormStep] = useState<'form' | 'preview'>('form')
@@ -174,6 +188,7 @@ export default function AdminEventsPage() {
 
   const [deleteTarget, setDeleteTarget] = useState<EventItem | null>(null)
   const [deleting, setDeleting] = useState(false)
+  const [finalizing, setFinalizing] = useState(false)
 
   const [detailEventId, setDetailEventId] = useState<string | null>(null)
   const [detailTab, setDetailTab] = useState('overview')
@@ -212,7 +227,7 @@ export default function AdminEventsPage() {
 
   const fetchCourses = useCallback(async () => {
     try {
-      const result = await apiClient<{ data: Course[] }>('/courses?limit=20', {
+      const result = await apiClient<{ data: Course[] }>('/courses?limit=1000', {
         authenticated: true,
       })
       setCourses(result.data)
@@ -223,7 +238,7 @@ export default function AdminEventsPage() {
 
   const fetchAttendance = useCallback(async () => {
     try {
-      const result = await apiClient<{ data: EventAttendance[] }>('/reports/events?limit=20', {
+      const result = await apiClient<{ data: EventAttendance[] }>('/reports/events?limit=1000', {
         authenticated: true,
       })
       const map = new Map<string, EventAttendance>()
@@ -318,10 +333,36 @@ export default function AdminEventsPage() {
 
   const pageCount = Math.max(1, Math.ceil(totalEvents / PAGE_SIZE))
   const clampedPage = Math.min(currentPage, pageCount)
-  const paginatedRows = rows.slice(
+
+  const sortedRows = useMemo(() => {
+    if (!sortBy) return rows
+    const dir = sortOrder === 'asc' ? 1 : -1
+    return [...rows].sort((a, b) => {
+      const av = a[sortBy as keyof EventRow]
+      const bv = b[sortBy as keyof EventRow]
+      if (av == null && bv == null) return 0
+      if (av == null) return 1
+      if (bv == null) return -1
+      if (typeof av === 'number' && typeof bv === 'number') return (av - bv) * dir
+      return String(av).localeCompare(String(bv)) * dir
+    })
+  }, [rows, sortBy, sortOrder])
+
+  const paginatedRows = sortedRows.slice(
     (clampedPage - 1) * PAGE_SIZE,
     clampedPage * PAGE_SIZE
   )
+
+  const handleSortChange = useCallback((sort: { key: string; direction: 'asc' | 'desc' } | null) => {
+    if (sort) {
+      setSortBy(sort.key)
+      setSortOrder(sort.direction)
+    } else {
+      setSortBy('')
+      setSortOrder('asc')
+    }
+    setCurrentPage(1)
+  }, [])
 
   const resetForm = useCallback(() => {
     setFormTitle('')
@@ -359,8 +400,8 @@ export default function AdminEventsPage() {
     setFormImportantNotice(event.importantNotice ?? '')
     setFormVenue(event.venue)
     setFormEventDate(event.eventDate.split('T')[0])
-    setFormStartTime(event.startTime.slice(11, 16))
-    setFormEndTime(event.endTime.slice(11, 16))
+    setFormStartTime(toTimeInput(event.startTime))
+    setFormEndTime(toTimeInput(event.endTime))
     setFormLateCutoff(event.lateCutoffTime)
     setFormIsMandatory(event.isMandatory)
     setFormCourseId(event.courseId ?? '')
@@ -518,6 +559,27 @@ export default function AdminEventsPage() {
     }
   }, [deleteTarget, toast, fetchEvents, fetchAttendance])
 
+  const handleFinalize = useCallback(async (eventId: string) => {
+    setFinalizing(true)
+    try {
+      const result = await apiClient<{ finalized: boolean; recordsCreated: number }>(
+        `/events/${eventId}/finalize`,
+        { method: 'POST', authenticated: true }
+      )
+      toast({ message: `Finalized — ${result.recordsCreated} absent record(s) created`, variant: 'success' })
+      fetchEvents()
+      fetchAttendance()
+    } catch (err) {
+      if (err instanceof ApiError) {
+        toast({ message: err.message, variant: 'error' })
+      } else {
+        toast({ message: 'Failed to finalize event', variant: 'error' })
+      }
+    } finally {
+      setFinalizing(false)
+    }
+  }, [toast, fetchEvents, fetchAttendance])
+
   const openDetail = useCallback(
     async (eventId: string) => {
       setDetailEventId(eventId)
@@ -547,7 +609,7 @@ export default function AdminEventsPage() {
       render: (row) =>
         row.courseCode ? <Badge variant="brand">{row.courseCode}</Badge> : <span className={styles.muted}>—</span>,
     },
-    { key: 'eventDate', header: 'Date', sortable: true, render: (row) => new Date(row.eventDate).toLocaleDateString() },
+    { key: 'eventDate', header: 'Date', sortable: true, render: (row) => parseLocalDate(row.eventDate).toLocaleDateString() },
     { key: 'venue', header: 'Venue', sortable: true },
     {
       key: 'attendanceRate',
@@ -629,6 +691,8 @@ export default function AdminEventsPage() {
         data={paginatedRows}
         getRowId={(r) => r.id}
         loading={loading}
+        sortState={sortBy ? { key: sortBy, direction: sortOrder } : null}
+        onSortChange={handleSortChange}
         emptyState={
           <div className={styles.emptyState}>
             <p>No events found.</p>
@@ -932,10 +996,15 @@ export default function AdminEventsPage() {
         bodyClassName={styles.detailDialogBody}
         footer={
           <div className={styles.dialogFooter}>
-            <div>
+            <div className={styles.dialogFooterLeft}>
               {detailEvent && (
                 <Button variant="destructive" onClick={() => { setDeleteTarget(detailEvent); setDetailEventId(null); }}>
                   Delete
+                </Button>
+              )}
+              {detailEvent && getStatus(detailEvent.eventDate) === 'completed' && (
+                <Button variant="brand" onClick={() => handleFinalize(detailEvent.id)} disabled={finalizing}>
+                  {finalizing ? 'Finalizing...' : 'Finalize'}
                 </Button>
               )}
             </div>
@@ -988,7 +1057,7 @@ export default function AdminEventsPage() {
                   </div>
                   <div className={styles.detailRowPro}>
                     <span className={styles.detailLabelPro}>Date</span>
-                    <span className={styles.detailValuePro}>{new Date(detailEvent.eventDate).toLocaleDateString()}</span>
+                    <span className={styles.detailValuePro}>{parseLocalDate(detailEvent.eventDate).toLocaleDateString()}</span>
                   </div>
                   <div className={styles.detailRowPro}>
                     <span className={styles.detailLabelPro}>Time</span>

@@ -1,0 +1,109 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.title {
+  font-family: var(--font-heading);
+  font-size: var(--text-2xl);
+  font-weight: 700;
+  margin: 0;
+}
+
+.cardGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(380px, 100%), 1fr));
+  gap: 12px;
+}
+
+.cardBody {
+  display: flex;
+  gap: 12px;
+}
+
+.dateBadge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 52px;
+  padding: 6px 10px;
+  background: var(--color-brand-dark);
+  color: #fff;
+  border-radius: var(--radius-control);
+  align-self: flex-start;
+}
+
+.dateMonth {
+  font-size: 10px;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+.dateDay {
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.cardContent {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.cardHeader {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.cardTitle {
+  font-weight: 600;
+  font-size: var(--text-sm);
+}
+
+.cardMeta {
+  font-size: var(--text-xs);
+  color: var(--color-muted-fg);
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.content {
+  font-size: var(--text-sm);
+  color: var(--color-neutral-900);
+  margin: 0;
+  white-space: pre-line;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+}
+
+.readMore {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--color-brand-dark);
+  text-decoration: none;
+  margin-top: 2px;
+}
+
+.readMore:hover {
+  color: var(--color-brand-primary);
+}
+
+.emptyState {
+  padding: 40px;
+  text-align: center;
+  color: var(--color-muted-fg);
+  font-size: var(--text-sm);
+}

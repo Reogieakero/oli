@@ -35,6 +35,10 @@
   width: 180px;
 }
 
+.filterDate {
+  width: 140px;
+}
+
 .actionBtns {
   display: flex;
   gap: var(--space-1);

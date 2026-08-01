@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback, useMemo, useRef } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { apiClient, ApiError } from '@/lib/apiClient'
 import { Button } from '@/components/ui/Button/Button'
 import { Badge } from '@/components/ui/Badge/Badge'
@@ -32,6 +33,7 @@ interface PaymentInfo {
   referenceNo: string | null
   paidAt: string
   notes: string | null
+  status: string
   paymentMethod: { name: string }
 }
 
@@ -123,6 +125,8 @@ export default function AdminBalancesPage() {
   const [filterStatus, setFilterStatus] = useState('')
   const [filterCourseId, setFilterCourseId] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
+  const [sortBy, setSortBy] = useState('')
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc')
 
   const [courses, setCourses] = useState<CourseOption[]>([])
   const [students, setStudents] = useState<StudentOption[]>([])
@@ -168,6 +172,20 @@ export default function AdminBalancesPage() {
   const [deleteMethodTarget, setDeleteMethodTarget] = useState<PaymentMethodOption | null>(null)
   const [methodDeleting, setMethodDeleting] = useState(false)
 
+  const [pendingPayments, setPendingPayments] = useState<any[]>([])
+  const [pendingLoading, setPendingLoading] = useState(false)
+  const [receiptDialog, setReceiptDialog] = useState<string | null>(null)
+  const [receiptUrl, setReceiptUrl] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!receiptDialog) { setReceiptUrl(null); return }
+    let cancelled = false
+    apiClient<{ signedUrl: string }>(`/payments/receipts/${encodeURIComponent(receiptDialog)}`, { authenticated: true })
+      .then(res => { if (!cancelled) setReceiptUrl(res.signedUrl) })
+      .catch(() => { if (!cancelled) setReceiptUrl(null) })
+    return () => { cancelled = true }
+  }, [receiptDialog])
+
   const statusOptions: SelectOption[] = [
     { value: '', label: 'All Statuses' },
     { value: 'overdue', label: 'Overdue' },
@@ -208,6 +226,7 @@ export default function AdminBalancesPage() {
       if (searchQuery) params.set('search', searchQuery)
       if (filterStatus) params.set('status', filterStatus)
       if (filterCourseId) params.set('courseId', filterCourseId)
+      if (sortBy) { params.set('sortBy', sortBy); params.set('sortOrder', sortOrder) }
 
       const result = await apiClient<BalanceListResponse>(`/balances?${params.toString()}`, { authenticated: true })
       setRecords(result.data)
@@ -218,11 +237,11 @@ export default function AdminBalancesPage() {
     } finally {
       setLoading(false)
     }
-  }, [router, currentPage, searchQuery, filterStatus, filterCourseId, toast])
+  }, [router, currentPage, searchQuery, filterStatus, filterCourseId, sortBy, sortOrder, toast])
 
   const fetchCourses = useCallback(async () => {
     try {
-      const result = await apiClient<{ data: CourseOption[] }>('/courses?limit=20', { authenticated: true })
+      const result = await apiClient<{ data: CourseOption[] }>('/courses?limit=1000', { authenticated: true })
       setCourses(result.data)
     } catch { /* ignore */ }
   }, [])
@@ -241,6 +260,57 @@ export default function AdminBalancesPage() {
     } catch { /* ignore */ }
   }, [])
 
+  const fetchPendingPayments = useCallback(async () => {
+    setPendingLoading(true)
+    try {
+      const res = await apiClient<{ data: any[] }>('/payments/pending', { authenticated: true })
+      setPendingPayments(res.data)
+    } catch { /* ignore */ }
+    finally { setPendingLoading(false) }
+  }, [])
+
+  const handleApprovePayment = useCallback(async (paymentId: string) => {
+    try {
+      await apiClient(`/payments/${paymentId}/approve`, { method: 'PATCH', authenticated: true })
+      toast({ message: 'Payment approved', variant: 'success' })
+      fetchPendingPayments()
+      fetchRecords()
+    } catch (err: any) {
+      toast({ message: err.message || 'Failed to approve', variant: 'error' })
+    }
+  }, [toast, fetchPendingPayments, fetchRecords])
+
+  const handleSortChange = useCallback((sort: { key: string; direction: 'asc' | 'desc' } | null) => {
+    if (sort) {
+      setSortBy(sort.key)
+      setSortOrder(sort.direction)
+    } else {
+      setSortBy('')
+      setSortOrder('asc')
+    }
+    setCurrentPage(1)
+  }, [])
+
+  const [rejectPaymentId, setRejectPaymentId] = useState<string | null>(null)
+  const [rejectNotes, setRejectNotes] = useState('')
+
+  const handleRejectPayment = useCallback(async () => {
+    if (!rejectPaymentId) return
+    try {
+      await apiClient(`/payments/${rejectPaymentId}/reject`, {
+        method: 'PATCH',
+        body: { adminNotes: rejectNotes || undefined },
+        authenticated: true,
+      })
+      toast({ message: 'Payment rejected', variant: 'success' })
+      setRejectPaymentId(null)
+      setRejectNotes('')
+      fetchPendingPayments()
+    } catch (err: any) {
+      toast({ message: err.message || 'Failed to reject', variant: 'error' })
+    }
+  }, [rejectPaymentId, rejectNotes, toast, fetchPendingPayments])
+
   useEffect(() => {
     fetchRecords()
     return () => { if (searchTimerRef.current) clearTimeout(searchTimerRef.current) }
@@ -251,6 +321,8 @@ export default function AdminBalancesPage() {
     fetchStudents()
     fetchPaymentMethods()
   }, [fetchCourses, fetchStudents, fetchPaymentMethods])
+
+  useEffect(() => { fetchPendingPayments() }, [fetchPendingPayments])
 
   const pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE))
 
@@ -485,7 +557,9 @@ export default function AdminBalancesPage() {
 
   const totalPaid = useMemo(() => {
     if (!detailRecord) return 0
-    return detailRecord.payments.reduce((sum, p) => sum + Number(p.amount), 0)
+    return detailRecord.payments
+      .filter(p => p.status === 'approved')
+      .reduce((sum, p) => sum + Number(p.amount), 0)
   }, [detailRecord])
 
   const overdueDetail = useMemo(() => {
@@ -540,7 +614,7 @@ export default function AdminBalancesPage() {
       key: 'outstanding',
       header: 'Outstanding',
       render: (row) => {
-        const paid = row.payments.reduce((s, p) => s + Number(p.amount), 0)
+        const paid = row.payments.filter(p => p.status === 'approved').reduce((s, p) => s + Number(p.amount), 0)
         const outstanding = Number(row.amount) - paid
         return outstanding > 0 ? <span style={{ color: 'var(--color-status-danger)', fontWeight: 600 }}>{formatCurrency(outstanding)}</span> : <span style={{ color: 'var(--color-status-success)' }}>Paid</span>
       },
@@ -563,6 +637,9 @@ export default function AdminBalancesPage() {
       <div className={styles.header}>
         <h1 className={styles.title}>Balances</h1>
         <div className={styles.headerRight}>
+          <Link href="/admin/balances/receipts">
+            <Button variant="outline">Receipts</Button>
+          </Link>
           <Button variant="outline" onClick={() => { fetchPaymentMethods(); resetMethodForm(); setMethodsOpen(true) }}>Payment Methods</Button>
           <Button onClick={openAdd}>Add Balance</Button>
         </div>
@@ -583,11 +660,61 @@ export default function AdminBalancesPage() {
         </div>
       )}
 
+      {pendingPayments.length > 0 && (
+        <div style={{ background: 'var(--color-status-warning-bg)', border: '1px solid var(--color-status-warning)', borderRadius: 'var(--radius-control)', padding: 16 }}>
+          <h3 style={{ margin: '0 0 12px', fontFamily: 'var(--font-heading)', fontSize: 'var(--text-base)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8 }}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--color-status-warning)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+              <line x1="12" y1="9" x2="12" y2="13" />
+              <line x1="12" y1="17" x2="12.01" y2="17" />
+            </svg>
+            Pending Payments ({pendingPayments.length})
+          </h3>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {pendingPayments.map((p: any) => (
+              <div key={p.id} style={{
+                display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap',
+                padding: '10px 14px', background: '#fff', borderRadius: 'var(--radius-control)',
+                border: '1px solid var(--color-border)',
+              }}>
+                <div style={{ flex: 1, minWidth: 200, display: 'flex', flexDirection: 'column', gap: 2, fontSize: 'var(--text-sm)' }}>
+                  <div style={{ fontWeight: 600 }}>
+                    {p.balance?.student?.firstName} {p.balance?.student?.lastName}
+                    <span style={{ color: 'var(--color-muted-fg)', fontWeight: 400, marginLeft: 6 }}>
+                      ({p.balance?.student?.studentId})
+                    </span>
+                  </div>
+                  <div style={{ color: 'var(--color-muted-fg)' }}>
+                    {p.balance?.description} &middot; ₱{Number(p.amount).toFixed(2)} via {p.paymentMethod?.name}
+                  </div>
+                  {p.referenceNo && <div style={{ color: 'var(--color-muted-fg)' }}>Ref: {p.referenceNo}</div>}
+                </div>
+                <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                  {p.proofReceipt && (
+                    <Button variant="outline" size="sm" onClick={() => setReceiptDialog(p.proofReceipt)}>
+                      Receipt
+                    </Button>
+                  )}
+                  <Button variant="primary" size="sm" onClick={() => handleApprovePayment(p.id)}>
+                    Approve
+                  </Button>
+                  <Button variant="destructive" size="sm" onClick={() => { setRejectPaymentId(p.id); setRejectNotes('') }}>
+                    Reject
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       <DataTable
         columns={columnDefs}
         data={records}
         getRowId={(r) => r.id}
         loading={loading}
+        sortState={sortBy ? { key: sortBy, direction: sortOrder } : null}
+        onSortChange={handleSortChange}
         onRowClick={openDetail}
         emptyState={
           <div className={styles.emptyState}>
@@ -803,9 +930,14 @@ export default function AdminBalancesPage() {
                           {p.paymentMethod.name}{p.referenceNo ? ` · Ref: ${p.referenceNo}` : ''}
                         </div>
                       </div>
-                      <div className={styles.paymentMeta}>
-                        {formatDate(p.paidAt)}
-                        {p.notes ? ` · ${p.notes}` : ''}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <Badge variant={p.status === 'approved' ? 'success' : p.status === 'rejected' ? 'danger' : 'warning'}>
+                          {p.status.charAt(0).toUpperCase() + p.status.slice(1)}
+                        </Badge>
+                        <div className={styles.paymentMeta}>
+                          {formatDate(p.paidAt)}
+                          {p.notes ? ` · ${p.notes}` : ''}
+                        </div>
                       </div>
                     </div>
                   ))
@@ -974,6 +1106,51 @@ export default function AdminBalancesPage() {
           <p>Are you sure you want to delete <strong>{deleteMethodTarget?.name}</strong>?</p>
           <p>If this method has existing payments, it will be deactivated instead.</p>
         </div>
+      </Dialog>
+
+      {/* Reject Payment Dialog */}
+      <Dialog
+        open={!!rejectPaymentId}
+        onClose={() => setRejectPaymentId(null)}
+        title="Reject Payment"
+        footer={
+          <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+            <Button variant="outline" onClick={() => setRejectPaymentId(null)}>Cancel</Button>
+            <Button variant="destructive" onClick={handleRejectPayment}>Reject Payment</Button>
+          </div>
+        }
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <p style={{ margin: 0, fontSize: 'var(--text-sm)' }}>Are you sure you want to reject this payment?</p>
+          <div>
+            <label style={{ fontSize: 'var(--text-sm)', fontWeight: 500 }}>Notes (optional)</label>
+            <Input value={rejectNotes} onChange={e => setRejectNotes(e.target.value)} placeholder="Reason for rejection..." />
+          </div>
+        </div>
+      </Dialog>
+
+      {/* Receipt Image Dialog */}
+      <Dialog
+        open={!!receiptDialog}
+        onClose={() => setReceiptDialog(null)}
+        title="Proof of Payment"
+      >
+        {receiptDialog && (
+          <div style={{ textAlign: 'center' }}>
+            <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-muted-fg)', marginBottom: 12 }}>
+              File: {receiptDialog.split('/').pop()}
+            </p>
+            {receiptUrl ? (
+              <img
+                src={receiptUrl}
+                alt="Payment Receipt"
+                style={{ maxWidth: '100%', maxHeight: '70vh', borderRadius: 'var(--radius-control)' }}
+              />
+            ) : (
+              <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-muted-fg)' }}>Receipt unavailable.</p>
+            )}
+          </div>
+        )}
       </Dialog>
     </div>
   )

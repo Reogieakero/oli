@@ -82,7 +82,6 @@ async function listSanctions(page = 1, limit = 20, filters = {}) {
 
   let sanctionWhere = {};
   if (filters.status) sanctionWhere.status = filters.status;
-  else sanctionWhere.status = 'active';
   if (filters.search) {
     const q = filters.search;
     sanctionWhere.student = {

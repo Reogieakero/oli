@@ -1,10 +1,356 @@
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "rhel-openssl-3.0.x", "debian-openssl-3.0.x"]
 }
 
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String     @id @default(uuid()) @db.Uuid
+  email        String     @unique @db.VarChar(150)
+  passwordHash String?    @map("password_hash") @db.VarChar(255)
+  role         UserRole
+  createdAt    DateTime   @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt    DateTime   @updatedAt @map("updated_at") @db.Timestamp(6)
+  googleId     String?    @unique @map("google_id") @db.VarChar(255)
+  needsProfile Boolean    @default(false) @map("needs_profile")
+  faculty      Faculty?
+  feedback     Feedback[]
+  student      Student?
+
+  @@map("users")
+}
+
+model Student {
+  id                String             @id @default(uuid()) @db.Uuid
+  userId            String             @unique @map("user_id") @db.Uuid
+  firstName         String             @default("") @map("first_name") @db.VarChar(100)
+  lastName          String             @default("") @map("last_name") @db.VarChar(100)
+  studentId         String             @unique @map("student_id") @db.VarChar(20)
+  courseId          String?            @map("course_id") @db.Uuid
+  yearLevel         Int                @map("year_level") @db.SmallInt
+  qrCodeToken       String             @unique @map("qr_code_token") @db.VarChar(255)
+  qrRegeneratedAt   DateTime?          @map("qr_regenerated_at") @db.Timestamp(6)
+  avatarUrl         String?            @map("avatar_url") @db.VarChar(500)
+  createdAt         DateTime           @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt         DateTime           @updatedAt @map("updated_at") @db.Timestamp(6)
+  announcementReads AnnouncementRead[]
+  attendanceRecords AttendanceRecord[]
+  balances          Balance[]
+  disputes          Dispute[]
+  sanctions         Sanction[]
+  course            Course?            @relation(fields: [courseId], references: [id])
+  user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("students")
+}
+
+model Faculty {
+  id              String                   @id @default(uuid()) @db.Uuid
+  userId          String                   @unique @map("user_id") @db.Uuid
+  fullName        String                   @map("full_name") @db.VarChar(100)
+  createdAt       DateTime                 @default(now()) @map("created_at") @db.Timestamp(6)
+  announcements   Announcement[]
+  changes         AttendanceRecordChange[]
+  auditFiles      AuditFile[]
+  disputes        Dispute[]                @relation("DisputeReviewer")
+  events          Event[]
+  user            User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  paymentMethods  PaymentMethod[]
+  payments        Payment[]
+  sanctionChanges SanctionStatusChange[]
+  sanctionsIssued Sanction[]               @relation("SanctionIssuer")
+
+  @@map("faculty")
+}
+
+model Course {
+  id            String         @id @default(uuid()) @db.Uuid
+  code          String         @unique @map("code") @db.VarChar(20)
+  name          String         @map("name") @db.VarChar(100)
+  createdAt     DateTime       @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt     DateTime       @updatedAt @map("updated_at") @db.Timestamp(6)
+  announcements Announcement[]
+  auditFiles    AuditFile[]
+  events        Event[]
+  students      Student[]
+
+  @@map("courses")
+}
+
+model Announcement {
+  id              String                   @id @default(uuid()) @db.Uuid
+  facultyId       String                   @map("faculty_id") @db.Uuid
+  courseId        String?                  @map("course_id") @db.Uuid
+  title           String                   @db.VarChar(150)
+  content         String
+  targetYearLevel Int?                     @map("target_year_level") @db.SmallInt
+  isGeneral       Boolean                  @default(false) @map("is_general")
+  createdAt       DateTime                 @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt       DateTime                 @updatedAt @map("updated_at") @db.Timestamp(6)
+  expiresAt       DateTime?                @map("expires_at") @db.Timestamp(6)
+  publishAt       DateTime?                @map("publish_at") @db.Timestamp(6)
+  status          AnnouncementStatus       @default(draft)
+  attachments     AnnouncementAttachment[]
+  reads           AnnouncementRead[]
+  course          Course?                  @relation(fields: [courseId], references: [id])
+  faculty         Faculty                  @relation(fields: [facultyId], references: [id])
+
+  @@index([courseId, targetYearLevel], map: "idx_announcements_targeting")
+  @@index([status], map: "idx_announcements_status")
+  @@map("announcements")
+}
+
+model AnnouncementRead {
+  id             String       @id @default(uuid()) @db.Uuid
+  announcementId String       @map("announcement_id") @db.Uuid
+  studentId      String       @map("student_id") @db.Uuid
+  readAt         DateTime     @default(now()) @map("read_at") @db.Timestamp(6)
+  announcement   Announcement @relation(fields: [announcementId], references: [id], onDelete: Cascade)
+  student        Student      @relation(fields: [studentId], references: [id])
+
+  @@unique([announcementId, studentId], name: "uq_announcement_read")
+  @@index([announcementId], map: "idx_announcement_reads")
+  @@map("announcement_reads")
+}
+
+model AnnouncementAttachment {
+  id             String       @id @default(uuid()) @db.Uuid
+  announcementId String       @map("announcement_id") @db.Uuid
+  fileName       String       @map("file_name") @db.VarChar(150)
+  fileUrl        String       @map("file_url") @db.VarChar(255)
+  fileSize       Int          @map("file_size")
+  mimeType       String       @map("mime_type") @db.VarChar(50)
+  createdAt      DateTime     @default(now()) @map("created_at") @db.Timestamp(6)
+  announcement   Announcement @relation(fields: [announcementId], references: [id], onDelete: Cascade)
+
+  @@map("announcement_attachments")
+}
+
+model Event {
+  id                 String             @id @default(uuid()) @db.Uuid
+  facultyId          String             @map("faculty_id") @db.Uuid
+  courseId           String?            @map("course_id") @db.Uuid
+  title              String             @db.VarChar(150)
+  description        String?
+  venue              String             @db.VarChar(150)
+  eventDate          DateTime           @map("event_date") @db.Date
+  startTime          DateTime           @map("start_time") @db.Time(6)
+  endTime            DateTime           @map("end_time") @db.Time(6)
+  lateCutoffTime     Int                @default(15) @map("late_cutoff_time")
+  isMandatory        Boolean            @default(false) @map("is_mandatory")
+  targetYearLevel    Int?               @map("target_year_level") @db.SmallInt
+  programPasscode    String             @unique @map("program_passcode") @db.VarChar(10)
+  passcodeExpiresAt  DateTime?          @map("passcode_expires_at") @db.Timestamp(6)
+  isActive           Boolean            @default(true) @map("is_active")
+  createdAt          DateTime           @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt          DateTime           @updatedAt @map("updated_at") @db.Timestamp(6)
+  coverPhoto         String?            @map("cover_photo")
+  coverPhotoFileName String?            @map("cover_photo_file_name")
+  importantNotice    String?            @map("important_notice")
+  attendanceRecords  AttendanceRecord[]
+  course             Course?            @relation(fields: [courseId], references: [id])
+  faculty            Faculty            @relation(fields: [facultyId], references: [id])
+
+  @@index([courseId, targetYearLevel], map: "idx_events_targeting")
+  @@index([eventDate], map: "idx_events_date")
+  @@map("events")
+}
+
+model AttendanceRecord {
+  id              String                   @id @default(uuid()) @db.Uuid
+  studentId       String                   @map("student_id") @db.Uuid
+  eventId         String                   @map("event_id") @db.Uuid
+  status          AttendanceStatus         @default(absent)
+  scannedAt       DateTime?                @map("scanned_at") @db.Timestamp(6)
+  scanMethod      ScanMethod?              @map("scan_method")
+  scannerDeviceId String?                  @map("scanner_device_id") @db.VarChar(100)
+  createdAt       DateTime                 @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt       DateTime                 @updatedAt @map("updated_at") @db.Timestamp(6)
+  changes         AttendanceRecordChange[]
+  event           Event                    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  student         Student                  @relation(fields: [studentId], references: [id])
+  dispute         Dispute?
+
+  @@unique([studentId, eventId], name: "uq_attendance_event_student")
+  @@index([studentId, status], map: "idx_attendance_student_status")
+  @@index([eventId, status], map: "idx_attendance_event_status")
+  @@map("attendance_records")
+}
+
+model SanctionRule {
+  id               String           @id @default(uuid()) @db.Uuid
+  absenceThreshold Int              @map("absence_threshold") @db.SmallInt
+  sanctionLevel    String           @map("sanction_level") @db.VarChar(50)
+  description      String?
+  isActive         Boolean          @default(true) @map("is_active")
+  createdAt        DateTime         @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt        DateTime         @updatedAt @map("updated_at") @db.Timestamp(6)
+  type             SanctionRuleType @default(absence) @map("type")
+  sanctions        Sanction[]
+
+  @@unique([type, absenceThreshold], name: "idx_sanction_rule_type_threshold")
+  @@map("sanction_rules")
+}
+
+model Sanction {
+  id             String                 @id @default(uuid()) @db.Uuid
+  studentId      String                 @map("student_id") @db.Uuid
+  sanctionRuleId String                 @map("sanction_rule_id") @db.Uuid
+  status         SanctionStatus         @default(active)
+  triggeredAt    DateTime               @default(now()) @map("triggered_at") @db.Timestamp(6)
+  resolvedAt     DateTime?              @map("resolved_at") @db.Timestamp(6)
+  notes          String?
+  createdAt      DateTime               @default(now()) @map("created_at") @db.Timestamp(6)
+  issuedById     String?                @map("issued_by_id") @db.Uuid
+  statusChanges  SanctionStatusChange[]
+  issuedBy       Faculty?               @relation("SanctionIssuer", fields: [issuedById], references: [id])
+  sanctionRule   SanctionRule           @relation(fields: [sanctionRuleId], references: [id])
+  student        Student                @relation(fields: [studentId], references: [id])
+
+  @@index([studentId, status], map: "idx_sanctions_student")
+  @@map("sanctions")
+}
+
+model SanctionStatusChange {
+  id          String          @id @default(uuid()) @db.Uuid
+  sanctionId  String          @map("sanction_id") @db.Uuid
+  changedById String          @map("changed_by_id") @db.Uuid
+  oldStatus   SanctionStatus? @map("old_status")
+  newStatus   SanctionStatus  @map("new_status")
+  reason      String?         @db.VarChar(500)
+  createdAt   DateTime        @default(now()) @map("created_at") @db.Timestamp(6)
+  changedBy   Faculty         @relation(fields: [changedById], references: [id])
+  sanction    Sanction        @relation(fields: [sanctionId], references: [id], onDelete: Cascade)
+
+  @@index([sanctionId], map: "idx_sanction_changes_record")
+  @@index([changedById], map: "idx_sanction_changes_user")
+  @@map("sanction_status_changes")
+}
+
+model Balance {
+  id          String        @id @default(uuid()) @db.Uuid
+  studentId   String        @map("student_id") @db.Uuid
+  description String
+  amount      Decimal       @db.Decimal(10, 2)
+  status      BalanceStatus @default(unpaid)
+  dueDate     DateTime?     @map("due_date") @db.Date
+  createdAt   DateTime      @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt   DateTime      @updatedAt @map("updated_at") @db.Timestamp(6)
+  student     Student       @relation(fields: [studentId], references: [id])
+  payments    Payment[]
+
+  @@index([studentId], map: "idx_balances_student")
+  @@map("balances")
+}
+
+model PaymentMethod {
+  id            String    @id @default(uuid()) @db.Uuid
+  name          String    @unique @map("name") @db.VarChar(50)
+  facultyId     String    @map("faculty_id") @db.Uuid
+  isActive      Boolean   @default(true) @map("is_active")
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt     DateTime  @updatedAt @map("updated_at") @db.Timestamp(6)
+  accountName   String?   @map("account_name") @db.VarChar(100)
+  accountNumber String?   @map("account_number") @db.VarChar(100)
+  instructions  String?   @map("instructions") @db.VarChar(255)
+  faculty       Faculty   @relation(fields: [facultyId], references: [id])
+  payments      Payment[]
+
+  @@map("payment_methods")
+}
+
+model Payment {
+  id              String        @id @default(uuid()) @db.Uuid
+  balanceId       String        @map("balance_id") @db.Uuid
+  paymentMethodId String        @map("payment_method_id") @db.Uuid
+  amount          Decimal       @db.Decimal(10, 2)
+  referenceNo     String?       @map("reference_no") @db.VarChar(100)
+  paidAt          DateTime      @default(now()) @map("paid_at") @db.Timestamp(6)
+  recordedBy      String?       @map("recorded_by") @db.Uuid
+  notes           String?
+  createdAt       DateTime      @default(now()) @map("created_at") @db.Timestamp(6)
+  proofReceipt    String?       @map("proof_receipt") @db.VarChar(255)
+  adminNotes      String?       @map("admin_notes") @db.VarChar(500)
+  status          PaymentStatus @default(pending) @map("status")
+  balance         Balance       @relation(fields: [balanceId], references: [id])
+  paymentMethod   PaymentMethod @relation(fields: [paymentMethodId], references: [id])
+  faculty         Faculty?      @relation(fields: [recordedBy], references: [id])
+
+  @@index([balanceId], map: "idx_payments_balance")
+  @@map("payments")
+}
+
+model Dispute {
+  id                 String           @id @default(uuid()) @db.Uuid
+  attendanceRecordId String           @unique @map("attendance_record_id") @db.Uuid
+  studentId          String           @map("student_id") @db.Uuid
+  reason             String
+  status             DisputeStatus    @default(pending)
+  reviewedBy         String?          @map("reviewed_by") @db.Uuid
+  reviewedAt         DateTime?        @map("reviewed_at") @db.Timestamp(6)
+  facultyNotes       String?          @map("faculty_notes") @db.VarChar(255)
+  createdAt          DateTime         @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt          DateTime         @updatedAt @map("updated_at") @db.Timestamp(6)
+  attendanceRecord   AttendanceRecord @relation(fields: [attendanceRecordId], references: [id], onDelete: Cascade)
+  reviewer           Faculty?         @relation("DisputeReviewer", fields: [reviewedBy], references: [id])
+  student            Student          @relation(fields: [studentId], references: [id])
+
+  @@index([studentId], map: "idx_disputes_student")
+  @@map("disputes")
+}
+
+model Feedback {
+  id          String    @id @default(uuid()) @db.Uuid
+  userId      String    @map("user_id") @db.Uuid
+  subject     String    @db.VarChar(150)
+  message     String
+  isAnonymous Boolean   @default(false) @map("is_anonymous")
+  response    String?
+  respondedAt DateTime? @map("responded_at") @db.Timestamp(6)
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt   DateTime  @updatedAt @map("updated_at") @db.Timestamp(6)
+  user        User      @relation(fields: [userId], references: [id])
+
+  @@map("feedback")
+}
+
+model AuditFile {
+  id          String   @id @default(uuid()) @db.Uuid
+  facultyId   String   @map("faculty_id") @db.Uuid
+  title       String   @db.VarChar(150)
+  description String?
+  fileName    String   @map("file_name") @db.VarChar(255)
+  fileUrl     String   @map("file_url") @db.VarChar(255)
+  fileSize    Int      @map("file_size")
+  mimeType    String   @map("mime_type") @db.VarChar(50)
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamp(6)
+  category    String?  @db.VarChar(50)
+  courseId    String?  @map("course_id") @db.Uuid
+  course      Course?  @relation(fields: [courseId], references: [id])
+  faculty     Faculty  @relation(fields: [facultyId], references: [id])
+
+  @@map("audit_files")
+}
+
+model AttendanceRecordChange {
+  id                 String            @id @default(uuid()) @db.Uuid
+  attendanceRecordId String            @map("attendance_record_id") @db.Uuid
+  changedById        String            @map("changed_by_id") @db.Uuid
+  oldStatus          AttendanceStatus? @map("old_status")
+  newStatus          AttendanceStatus  @map("new_status")
+  changeType         String            @map("change_type") @db.VarChar(30)
+  reason             String?           @db.VarChar(500)
+  createdAt          DateTime          @default(now()) @map("created_at") @db.Timestamp(6)
+  attendanceRecord   AttendanceRecord  @relation(fields: [attendanceRecordId], references: [id], onDelete: Cascade)
+  changedBy          Faculty           @relation(fields: [changedById], references: [id])
+
+  @@index([attendanceRecordId], map: "idx_attendance_changes_record")
+  @@index([changedById], map: "idx_attendance_changes_user")
+  @@map("attendance_record_changes")
 }
 
 enum UserRole {
@@ -30,6 +376,12 @@ enum DisputeStatus {
   rejected
 }
 
+enum PaymentStatus {
+  pending
+  approved
+  rejected
+}
+
 enum SanctionStatus {
   active
   superseded
@@ -50,363 +402,4 @@ enum AnnouncementStatus {
 enum ScanMethod {
   qr_scan
   manual
-}
-
-model User {
-  id           String   @id @default(uuid()) @db.Uuid
-  email        String   @unique @db.VarChar(150)
-  passwordHash String?  @map("password_hash") @db.VarChar(255)
-  googleId     String?  @unique @map("google_id") @db.VarChar(255)
-  role         UserRole
-  needsProfile Boolean  @default(false) @map("needs_profile")
-  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamp(6)
-  updatedAt    DateTime @updatedAt @map("updated_at") @db.Timestamp(6)
-
-  student  Student?
-  faculty  Faculty?
-  feedback Feedback[]
-
-  @@map("users")
-}
-
-model Student {
-  id              String    @id @default(uuid()) @db.Uuid
-  userId          String    @unique @map("user_id") @db.Uuid
-  firstName       String    @default("") @map("first_name") @db.VarChar(100)
-  lastName        String    @default("") @map("last_name") @db.VarChar(100)
-  studentId       String    @unique @map("student_id") @db.VarChar(20)
-  courseId        String?   @map("course_id") @db.Uuid
-  yearLevel       Int       @map("year_level") @db.SmallInt
-  qrCodeToken     String    @unique @map("qr_code_token") @db.VarChar(255)
-  qrRegeneratedAt DateTime? @map("qr_regenerated_at") @db.Timestamp(6)
-  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamp(6)
-  updatedAt       DateTime  @updatedAt @map("updated_at") @db.Timestamp(6)
-
-  user             User               @relation(fields: [userId], references: [id], onDelete: Cascade)
-  course           Course?            @relation(fields: [courseId], references: [id])
-  attendanceRecords AttendanceRecord[]
-  sanctions        Sanction[]
-  balances         Balance[]
-  disputes         Dispute[]
-  announcementReads AnnouncementRead[]
-
-  @@map("students")
-}
-
-model Faculty {
-  id        String   @id @default(uuid()) @db.Uuid
-  userId    String   @unique @map("user_id") @db.Uuid
-  fullName  String   @map("full_name") @db.VarChar(100)
-  createdAt DateTime @default(now()) @map("created_at") @db.Timestamp(6)
-
-  user           User                      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  announcements  Announcement[]
-  events         Event[]
-  auditFiles     AuditFile[]
-  disputes       Dispute[]                 @relation("DisputeReviewer")
-  paymentMethods PaymentMethod[]
-  payments       Payment[]
-  changes        AttendanceRecordChange[]
-  sanctionsIssued  Sanction[]               @relation("SanctionIssuer")
-  sanctionChanges  SanctionStatusChange[]
-  @@map("faculty")
-}
-
-model Course {
-  id        String   @id @default(uuid()) @db.Uuid
-  code      String   @unique @map("code") @db.VarChar(20)
-  name      String   @map("name") @db.VarChar(100)
-  createdAt DateTime @default(now()) @map("created_at") @db.Timestamp(6)
-  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamp(6)
-
-  announcements Announcement[]
-  events        Event[]
-  students      Student[]
-  auditFiles    AuditFile[]
-
-  @@map("courses")
-}
-
-model Announcement {
-  id              String             @id @default(uuid()) @db.Uuid
-  facultyId       String             @map("faculty_id") @db.Uuid
-  courseId        String?            @map("course_id") @db.Uuid
-  title           String             @db.VarChar(150)
-  content         String
-  targetYearLevel Int?               @map("target_year_level") @db.SmallInt
-  isGeneral       Boolean            @default(false) @map("is_general")
-  status          AnnouncementStatus @default(draft)
-  publishAt       DateTime?          @map("publish_at") @db.Timestamp(6)
-  expiresAt       DateTime?          @map("expires_at") @db.Timestamp(6)
-  createdAt       DateTime           @default(now()) @map("created_at") @db.Timestamp(6)
-  updatedAt       DateTime           @updatedAt @map("updated_at") @db.Timestamp(6)
-
-  faculty     Faculty                  @relation(fields: [facultyId], references: [id])
-  course      Course?                  @relation(fields: [courseId], references: [id])
-  attachments AnnouncementAttachment[]
-  reads       AnnouncementRead[]
-
-  @@index([courseId, targetYearLevel], name: "idx_announcements_targeting")
-  @@index([status], name: "idx_announcements_status")
-  @@map("announcements")
-}
-
-model AnnouncementRead {
-  id             String   @id @default(uuid()) @db.Uuid
-  announcementId String   @map("announcement_id") @db.Uuid
-  studentId      String   @map("student_id") @db.Uuid
-  readAt         DateTime @default(now()) @map("read_at") @db.Timestamp(6)
-
-  announcement Announcement @relation(fields: [announcementId], references: [id], onDelete: Cascade)
-  student      Student      @relation(fields: [studentId], references: [id])
-
-  @@unique([announcementId, studentId], name: "uq_announcement_read")
-  @@index([announcementId], name: "idx_announcement_reads")
-  @@map("announcement_reads")
-}
-
-model AnnouncementAttachment {
-  id             String   @id @default(uuid()) @db.Uuid
-  announcementId String   @map("announcement_id") @db.Uuid
-  fileName       String   @map("file_name") @db.VarChar(150)
-  fileUrl        String   @map("file_url") @db.VarChar(255)
-  fileSize       Int      @map("file_size")
-  mimeType       String   @map("mime_type") @db.VarChar(50)
-  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamp(6)
-
-  announcement Announcement @relation(fields: [announcementId], references: [id], onDelete: Cascade)
-
-  @@map("announcement_attachments")
-}
-
-model Event {
-  id               String   @id @default(uuid()) @db.Uuid
-  facultyId        String   @map("faculty_id") @db.Uuid
-  courseId         String?  @map("course_id") @db.Uuid
-  title            String   @db.VarChar(150)
-  description      String?
-  importantNotice  String?  @map("important_notice")
-  coverPhoto       String?  @map("cover_photo")
-  coverPhotoFileName String? @map("cover_photo_file_name")
-  venue            String   @db.VarChar(150)
-  eventDate        DateTime @map("event_date") @db.Date
-  startTime        DateTime @map("start_time") @db.Time(6)
-  endTime          DateTime @map("end_time") @db.Time(6)
-  lateCutoffTime   Int      @default(15) @map("late_cutoff_time")
-  isMandatory      Boolean  @default(false) @map("is_mandatory")
-  targetYearLevel  Int?     @map("target_year_level") @db.SmallInt
-  programPasscode  String   @unique @map("program_passcode") @db.VarChar(10)
-  passcodeExpiresAt DateTime? @map("passcode_expires_at") @db.Timestamp(6)
-  isActive         Boolean  @default(true) @map("is_active")
-  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamp(6)
-  updatedAt        DateTime @updatedAt @map("updated_at") @db.Timestamp(6)
-
-  faculty           Faculty             @relation(fields: [facultyId], references: [id])
-  course            Course?             @relation(fields: [courseId], references: [id])
-  attendanceRecords AttendanceRecord[]
-
-  @@index([courseId, targetYearLevel], name: "idx_events_targeting")
-  @@index([eventDate], name: "idx_events_date")
-  @@map("events")
-}
-
-model AttendanceRecord {
-  id              String           @id @default(uuid()) @db.Uuid
-  studentId       String           @map("student_id") @db.Uuid
-  eventId         String           @map("event_id") @db.Uuid
-  status          AttendanceStatus @default(absent)
-  scannedAt       DateTime?        @map("scanned_at") @db.Timestamp(6)
-  scanMethod      ScanMethod?      @map("scan_method")
-  scannerDeviceId String?          @map("scanner_device_id") @db.VarChar(100)
-  createdAt       DateTime         @default(now()) @map("created_at") @db.Timestamp(6)
-  updatedAt       DateTime         @updatedAt @map("updated_at") @db.Timestamp(6)
-
-  student Student          @relation(fields: [studentId], references: [id])
-  event   Event            @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  dispute Dispute?
-  changes AttendanceRecordChange[]
-
-  @@unique([studentId, eventId], name: "uq_attendance_event_student")
-  @@index([studentId, status], name: "idx_attendance_student_status")
-  @@index([eventId, status], name: "idx_attendance_event_status")
-  @@map("attendance_records")
-}
-
-model SanctionRule {
-  id               String           @id @default(uuid()) @db.Uuid
-  type             SanctionRuleType @default(absence) @map("type")
-  absenceThreshold Int              @map("absence_threshold") @db.SmallInt
-  sanctionLevel    String           @map("sanction_level") @db.VarChar(50)
-  description      String?
-  isActive         Boolean          @default(true) @map("is_active")
-  createdAt        DateTime         @default(now()) @map("created_at") @db.Timestamp(6)
-  updatedAt        DateTime         @updatedAt @map("updated_at") @db.Timestamp(6)
-
-  sanctions Sanction[]
-
-  @@unique([type, absenceThreshold], name: "idx_sanction_rule_type_threshold")
-  @@map("sanction_rules")
-}
-
-model Sanction {
-  id             String         @id @default(uuid()) @db.Uuid
-  studentId      String         @map("student_id") @db.Uuid
-  sanctionRuleId String         @map("sanction_rule_id") @db.Uuid
-  status         SanctionStatus @default(active)
-  issuedById     String?        @map("issued_by_id") @db.Uuid
-  triggeredAt    DateTime       @default(now()) @map("triggered_at") @db.Timestamp(6)
-  resolvedAt     DateTime?      @map("resolved_at") @db.Timestamp(6)
-  notes          String?
-  createdAt      DateTime       @default(now()) @map("created_at") @db.Timestamp(6)
-
-  student       Student                 @relation(fields: [studentId], references: [id])
-  sanctionRule  SanctionRule            @relation(fields: [sanctionRuleId], references: [id])
-  issuedBy      Faculty?                @relation("SanctionIssuer", fields: [issuedById], references: [id])
-  statusChanges SanctionStatusChange[]
-
-  @@index([studentId, status], name: "idx_sanctions_student")
-  @@map("sanctions")
-}
-
-model SanctionStatusChange {
-  id          String         @id @default(uuid()) @db.Uuid
-  sanctionId  String         @map("sanction_id") @db.Uuid
-  changedById String         @map("changed_by_id") @db.Uuid
-  oldStatus   SanctionStatus? @map("old_status")
-  newStatus   SanctionStatus @map("new_status")
-  reason      String?        @db.VarChar(500)
-  createdAt   DateTime       @default(now()) @map("created_at") @db.Timestamp(6)
-
-  sanction Sanction @relation(fields: [sanctionId], references: [id], onDelete: Cascade)
-  changedBy Faculty @relation(fields: [changedById], references: [id])
-
-  @@index([sanctionId], name: "idx_sanction_changes_record")
-  @@index([changedById], name: "idx_sanction_changes_user")
-  @@map("sanction_status_changes")
-}
-
-model Balance {
-  id          String        @id @default(uuid()) @db.Uuid
-  studentId   String        @map("student_id") @db.Uuid
-  description String
-  amount      Decimal       @db.Decimal(10, 2)
-  status      BalanceStatus @default(unpaid)
-  dueDate     DateTime?     @map("due_date") @db.Date
-  createdAt   DateTime      @default(now()) @map("created_at") @db.Timestamp(6)
-  updatedAt   DateTime      @updatedAt @map("updated_at") @db.Timestamp(6)
-
-  student  Student   @relation(fields: [studentId], references: [id])
-  payments Payment[]
-
-  @@index([studentId], name: "idx_balances_student")
-  @@map("balances")
-}
-
-model PaymentMethod {
-  id            String   @id @default(uuid()) @db.Uuid
-  name          String   @unique @map("name") @db.VarChar(50)
-  accountName   String?  @map("account_name") @db.VarChar(100)
-  accountNumber String?  @map("account_number") @db.VarChar(100)
-  instructions  String?  @map("instructions") @db.VarChar(255)
-  facultyId     String   @map("faculty_id") @db.Uuid
-  isActive      Boolean  @default(true) @map("is_active")
-  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamp(6)
-  updatedAt     DateTime @updatedAt @map("updated_at") @db.Timestamp(6)
-
-  faculty  Faculty   @relation(fields: [facultyId], references: [id])
-  payments Payment[]
-
-  @@map("payment_methods")
-}
-
-model Payment {
-  id              String   @id @default(uuid()) @db.Uuid
-  balanceId       String   @map("balance_id") @db.Uuid
-  paymentMethodId String   @map("payment_method_id") @db.Uuid
-  amount          Decimal  @db.Decimal(10, 2)
-  referenceNo     String?  @map("reference_no") @db.VarChar(100)
-  paidAt          DateTime @default(now()) @map("paid_at") @db.Timestamp(6)
-  recordedBy      String   @map("recorded_by") @db.Uuid
-  notes           String?
-  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamp(6)
-
-  balance       Balance       @relation(fields: [balanceId], references: [id])
-  paymentMethod PaymentMethod @relation(fields: [paymentMethodId], references: [id])
-  faculty       Faculty       @relation(fields: [recordedBy], references: [id])
-
-  @@index([balanceId], name: "idx_payments_balance")
-  @@map("payments")
-}
-
-model Dispute {
-  id                 String        @id @default(uuid()) @db.Uuid
-  attendanceRecordId String        @unique @map("attendance_record_id") @db.Uuid
-  studentId          String        @map("student_id") @db.Uuid
-  reason             String
-  status             DisputeStatus @default(pending)
-  reviewedBy         String?       @map("reviewed_by") @db.Uuid
-  reviewedAt         DateTime?     @map("reviewed_at") @db.Timestamp(6)
-  facultyNotes       String?       @map("faculty_notes") @db.VarChar(255)
-  createdAt          DateTime      @default(now()) @map("created_at") @db.Timestamp(6)
-  updatedAt          DateTime      @updatedAt @map("updated_at") @db.Timestamp(6)
-
-  attendanceRecord AttendanceRecord @relation(fields: [attendanceRecordId], references: [id], onDelete: Cascade)
-  student          Student          @relation(fields: [studentId], references: [id])
-  reviewer         Faculty?         @relation("DisputeReviewer", fields: [reviewedBy], references: [id])
-
-  @@index([studentId], name: "idx_disputes_student")
-  @@map("disputes")
-}
-
-model Feedback {
-  id         String   @id @default(uuid()) @db.Uuid
-  userId     String   @map("user_id") @db.Uuid
-  subject    String   @db.VarChar(150)
-  message    String
-  isAnonymous Boolean @default(false) @map("is_anonymous")
-  response   String?
-  respondedAt DateTime? @map("responded_at") @db.Timestamp(6)
-  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamp(6)
-  updatedAt  DateTime @updatedAt @map("updated_at") @db.Timestamp(6)
-
-  user User @relation(fields: [userId], references: [id])
-
-  @@map("feedback")
-}
-
-model AuditFile {
-  id          String   @id @default(uuid()) @db.Uuid
-  facultyId   String   @map("faculty_id") @db.Uuid
-  courseId    String?  @map("course_id") @db.Uuid
-  category    String?  @db.VarChar(50)
-  title       String   @db.VarChar(150)
-  description String?
-  fileName    String   @map("file_name") @db.VarChar(255)
-  fileUrl     String   @map("file_url") @db.VarChar(255)
-  fileSize    Int      @map("file_size")
-  mimeType    String   @map("mime_type") @db.VarChar(50)
-  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamp(6)
-
-  faculty Faculty @relation(fields: [facultyId], references: [id])
-  course  Course? @relation(fields: [courseId], references: [id])
-
-  @@map("audit_files")
-}
-
-model AttendanceRecordChange {
-  id                 String             @id @default(uuid()) @db.Uuid
-  attendanceRecordId String             @map("attendance_record_id") @db.Uuid
-  changedById        String             @map("changed_by_id") @db.Uuid
-  oldStatus          AttendanceStatus?  @map("old_status")
-  newStatus          AttendanceStatus   @map("new_status")
-  changeType         String             @map("change_type") @db.VarChar(30)
-  reason             String?            @db.VarChar(500)
-  createdAt          DateTime           @default(now()) @map("created_at") @db.Timestamp(6)
-
-  attendanceRecord   AttendanceRecord   @relation(fields: [attendanceRecordId], references: [id], onDelete: Cascade)
-  changedBy          Faculty            @relation(fields: [changedById], references: [id])
-
-  @@index([attendanceRecordId], name: "idx_attendance_changes_record")
-  @@index([changedById], name: "idx_attendance_changes_user")
-  @@map("attendance_record_changes")
 }

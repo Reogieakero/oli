@@ -1,0 +1,73 @@
+.screen {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-4);
+  background: linear-gradient(160deg, var(--color-brand-light) 0%, #fff 45%);
+}
+
+.card {
+  width: 100%;
+  max-width: 520px;
+  background: var(--color-neutral-0);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+  box-shadow: var(--shadow-md);
+  overflow: hidden;
+}
+
+.header {
+  background: var(--color-brand-dark);
+  color: #fff;
+  padding: 24px 28px;
+}
+
+.title {
+  margin: 0;
+  font-family: var(--font-heading);
+  font-size: var(--text-lg);
+  font-weight: 700;
+}
+
+.subtitle {
+  margin: 6px 0 0;
+  font-size: var(--text-xs);
+  opacity: 0.85;
+}
+
+.body {
+  padding: 24px 28px 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.avatarSection {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.fieldRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.label {
+  font-size: var(--text-sm);
+  font-weight: 500;
+}
+
+.errorText {
+  font-size: var(--text-xs);
+  color: var(--color-status-danger);
+}

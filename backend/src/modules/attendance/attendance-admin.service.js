@@ -1,6 +1,33 @@
 const prisma = require('../../config/database');
 const { NotFoundError, ConflictError, ValidationError } = require('../../utils/errors');
 
+function toLocalDateStr(d) {
+  if (!(d instanceof Date)) return d;
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+function toLocalTimeStr(d) {
+  if (!(d instanceof Date)) return d;
+  const h = String(d.getHours()).padStart(2, '0');
+  const m = String(d.getMinutes()).padStart(2, '0');
+  const s = String(d.getSeconds()).padStart(2, '0');
+  return `${h}:${m}:${s}`;
+}
+
+function formatRecordDates(record) {
+  if (record.event) {
+    record.event = {
+      ...record.event,
+      eventDate: toLocalDateStr(record.event.eventDate),
+      startTime: toLocalTimeStr(record.event.startTime),
+    };
+  }
+  return record;
+}
+
 async function listRecords(page = 1, limit = 20, filters = {}) {
   const skip = (page - 1) * limit;
   const where = {};
@@ -30,10 +57,21 @@ async function listRecords(page = 1, limit = 20, filters = {}) {
   }
 
   const orderBy = {};
+  const sortOrder = filters.sortOrder || 'asc';
   if (filters.sortBy === 'studentName') {
-    orderBy.student = { firstName: filters.sortOrder || 'asc' };
+    orderBy.student = { firstName: sortOrder };
+  } else if (filters.sortBy === 'studentId') {
+    orderBy.student = { studentId: sortOrder };
+  } else if (filters.sortBy === 'course') {
+    orderBy.student = { course: { name: sortOrder } };
+  } else if (filters.sortBy === 'eventTitle') {
+    orderBy.event = { title: sortOrder };
+  } else if (filters.sortBy === 'eventDate') {
+    orderBy.event = { eventDate: sortOrder };
+  } else if (filters.sortBy === 'eventCourse') {
+    orderBy.event = { course: { name: sortOrder } };
   } else if (filters.sortBy) {
-    orderBy[filters.sortBy] = filters.sortOrder || 'asc';
+    orderBy[filters.sortBy] = sortOrder;
   } else {
     orderBy.createdAt = 'desc';
   }
@@ -73,7 +111,7 @@ async function listRecords(page = 1, limit = 20, filters = {}) {
     prisma.attendanceRecord.count({ where }),
   ]);
 
-  return { data, total, page, limit };
+  return { data: data.map(formatRecordDates), total, page, limit };
 }
 
 async function getFacultyId(userId) {

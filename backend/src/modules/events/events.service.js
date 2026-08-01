@@ -3,6 +3,31 @@ const supabase = require('../../config/supabase');
 const { NotFoundError, ValidationError, AppError } = require('../../utils/errors');
 const crypto = require('crypto');
 
+function toLocalDateStr(d) {
+  if (!(d instanceof Date)) return d;
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+function toLocalTimeStr(d) {
+  if (!(d instanceof Date)) return d;
+  const h = String(d.getHours()).padStart(2, '0');
+  const m = String(d.getMinutes()).padStart(2, '0');
+  const s = String(d.getSeconds()).padStart(2, '0');
+  return `${h}:${m}:${s}`;
+}
+
+function formatEventDates(event) {
+  return {
+    ...event,
+    eventDate: toLocalDateStr(event.eventDate),
+    startTime: toLocalTimeStr(event.startTime),
+    endTime: toLocalTimeStr(event.endTime),
+  };
+}
+
 const COVER_BUCKET = 'event-cover-photos';
 
 function generatePasscode() {
@@ -69,7 +94,7 @@ async function listEvents(user, page = 1, limit = 20, courseId) {
     prisma.event.count({ where }),
   ]);
 
-  return { data, total, page, limit };
+  return { data: data.map(formatEventDates), total, page, limit };
 }
 
 async function getEvent(id) {
@@ -82,7 +107,52 @@ async function getEvent(id) {
     },
   });
   if (!event) throw new NotFoundError('Event not found');
-  return event;
+  return formatEventDates(event);
+}
+
+async function findEligibleStudents(courseId, targetYearLevel) {
+  const where = {};
+  if (courseId) where.courseId = courseId;
+  if (targetYearLevel) where.yearLevel = targetYearLevel;
+
+  if (!courseId && !targetYearLevel) {
+    const allStudents = await prisma.student.findMany({ select: { id: true } });
+    return allStudents;
+  }
+
+  const students = await prisma.student.findMany({
+    where,
+    select: { id: true },
+  });
+  return students;
+}
+
+async function createAbsentRecords(eventId, courseId, targetYearLevel) {
+  const students = await findEligibleStudents(courseId, targetYearLevel);
+
+  if (students.length === 0) return 0;
+
+  const existingRecords = await prisma.attendanceRecord.findMany({
+    where: { eventId },
+    select: { studentId: true },
+  });
+  const existingStudentIds = new Set(existingRecords.map(r => r.studentId));
+
+  const newRecords = students
+    .filter(s => !existingStudentIds.has(s.id))
+    .map(s => ({
+      studentId: s.id,
+      eventId,
+      status: 'absent',
+    }));
+
+  if (newRecords.length === 0) return 0;
+
+  await prisma.attendanceRecord.createMany({
+    data: newRecords,
+  });
+
+  return newRecords.length;
 }
 
 async function createEvent(userId, data, coverFile) {
@@ -128,7 +198,18 @@ async function createEvent(userId, data, coverFile) {
     return newEvent;
   });
 
+  await createAbsentRecords(event.id, data.courseId || null, data.targetYearLevel || null);
+
   return event;
+}
+
+async function finalizeEvent(id) {
+  const event = await prisma.event.findUnique({ where: { id } });
+  if (!event) throw new NotFoundError('Event not found');
+
+  const count = await createAbsentRecords(id, event.courseId, event.targetYearLevel);
+
+  return { finalized: true, recordsCreated: count };
 }
 
 async function updateEvent(id, data, coverFile) {
@@ -194,4 +275,5 @@ async function getCoverSignedUrl(id) {
 
 module.exports = {
   listEvents, getEvent, createEvent, updateEvent, deleteEvent, getCoverSignedUrl,
+  finalizeEvent, findEligibleStudents,
 };

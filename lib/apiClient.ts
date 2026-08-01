@@ -48,6 +48,7 @@ export async function apiClient<T = unknown>(
     method,
     headers: requestHeaders,
     body: isFormData ? body : body ? JSON.stringify(body) : undefined,
+    cache: method === 'GET' ? 'no-cache' : undefined,
   });
 
   if (!res.ok) {

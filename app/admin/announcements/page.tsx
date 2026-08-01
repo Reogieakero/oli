@@ -131,6 +131,10 @@ export default function AdminAnnouncementsPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [filterStatus, setFilterStatus] = useState('')
   const [filterCourse, setFilterCourse] = useState('')
+  const [filterFromDate, setFilterFromDate] = useState('')
+  const [filterToDate, setFilterToDate] = useState('')
+  const [sortBy, setSortBy] = useState('')
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc')
   const [courseOptions, setCourseOptions] = useState<SelectOption[]>([])
 
   const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -164,8 +168,12 @@ export default function AdminAnnouncementsPage() {
       if (searchQuery) params.set('search', searchQuery)
       if (filterStatus) params.set('status', filterStatus)
       if (filterCourse) params.set('courseId', filterCourse)
+      if (filterFromDate) params.set('startDate', filterFromDate)
+      if (filterToDate) params.set('endDate', filterToDate)
+      if (sortBy) { params.set('sortBy', sortBy); params.set('sortOrder', sortOrder) }
       params.set('page', String(page))
       params.set('limit', String(PAGE_SIZE))
+      params.set('_', String(Date.now()))
       const result = await apiClient<AnnouncementListResponse>(`/announcements?${params.toString()}`, { authenticated: true })
       setData(result.data)
       setTotal(result.total)
@@ -176,14 +184,14 @@ export default function AdminAnnouncementsPage() {
     } finally {
       setLoading(false)
     }
-  }, [searchQuery, filterStatus, filterCourse, page, router])
+  }, [searchQuery, filterStatus, filterCourse, filterFromDate, filterToDate, sortBy, sortOrder, page, router])
 
   useEffect(() => { fetchData() }, [fetchData])
 
   useEffect(() => {
     async function loadCourses() {
       try {
-        const res = await apiClient<{ data: CourseOption[] }>('/courses?limit=20', { authenticated: true })
+        const res = await apiClient<{ data: CourseOption[] }>('/courses?limit=1000', { authenticated: true })
         setCourseOptions(res.data.map((c) => ({ value: c.id, label: c.name })))
       } catch { /* ignore */ }
     }
@@ -194,6 +202,17 @@ export default function AdminAnnouncementsPage() {
     setSearchQuery(value)
     if (searchTimerRef.current) clearTimeout(searchTimerRef.current)
     searchTimerRef.current = setTimeout(() => setPage(1), 250)
+  }, [])
+
+  const handleSortChange = useCallback((sort: { key: string; direction: 'asc' | 'desc' } | null) => {
+    if (sort) {
+      setSortBy(sort.key)
+      setSortOrder(sort.direction)
+    } else {
+      setSortBy('')
+      setSortOrder('asc')
+    }
+    setPage(1)
   }, [])
 
   const resetForm = useCallback(() => {
@@ -423,6 +442,8 @@ export default function AdminAnnouncementsPage() {
           placeholder="All Courses"
           className={styles.filterSelect}
         />
+        <DatePicker value={filterFromDate} onChange={(v) => { setFilterFromDate(v); setPage(1) }} placeholder="From date" className={styles.filterDate} />
+        <DatePicker value={filterToDate} onChange={(v) => { setFilterToDate(v); setPage(1) }} placeholder="To date" className={styles.filterDate} />
       </div>
 
       <DataTable
@@ -430,6 +451,8 @@ export default function AdminAnnouncementsPage() {
         data={data}
         getRowId={(r) => r.id}
         loading={loading}
+        sortState={sortBy ? { key: sortBy, direction: sortOrder } : null}
+        onSortChange={handleSortChange}
         onRowClick={(r) => setDetailRecord(r)}
         emptyState={<span>No announcements found.</span>}
         pagination={{ page, pageCount, onPageChange: setPage }}

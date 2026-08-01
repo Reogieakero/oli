@@ -231,7 +231,7 @@ async function dashboard() {
   };
 }
 
-async function balanceReport(startDate, endDate, courseId, page = 1, limit = 20) {
+async function balanceReport(startDate, endDate, courseId, status, page = 1, limit = 20) {
   const skip = (page - 1) * limit;
   const where = {};
   if (startDate || endDate) {
@@ -240,6 +240,7 @@ async function balanceReport(startDate, endDate, courseId, page = 1, limit = 20)
     if (endDate) where.createdAt.lte = new Date(endDate + 'T23:59:59.999Z');
   }
   if (courseId) where.student = { courseId };
+  if (status) where.status = status;
 
   const [data, total, aggregation] = await Promise.all([
     prisma.balance.findMany({
@@ -287,7 +288,7 @@ async function balanceReport(startDate, endDate, courseId, page = 1, limit = 20)
   return { data: rows, total, page, limit, stats };
 }
 
-async function sanctionReport(startDate, endDate, type, courseId, page = 1, limit = 20) {
+async function sanctionReport(startDate, endDate, type, courseId, status, page = 1, limit = 20) {
   const skip = (page - 1) * limit;
   const where = {};
   if (startDate || endDate) {
@@ -297,8 +298,9 @@ async function sanctionReport(startDate, endDate, type, courseId, page = 1, limi
   }
   if (type) where.sanctionRule = { type };
   if (courseId) where.student = { courseId };
+  if (status) where.status = status;
 
-  const [data, total, ruleIdCounts] = await Promise.all([
+  const [data, total, totalActive, ruleIdCounts] = await Promise.all([
     prisma.sanction.findMany({
       where,
       skip,
@@ -312,6 +314,7 @@ async function sanctionReport(startDate, endDate, type, courseId, page = 1, limi
       },
     }),
     prisma.sanction.count({ where }),
+    prisma.sanction.count({ where: { ...where, status: 'active' } }),
     prisma.sanction.groupBy({
       by: ['sanctionRuleId'],
       where,
@@ -357,7 +360,7 @@ async function sanctionReport(startDate, endDate, type, courseId, page = 1, limi
     page,
     limit,
     stats: {
-      totalActive: data.filter((s) => s.status === 'active').length,
+      totalActive,
       bySeverity: Object.entries(bySeverity).map(([level, count]) => ({ level, count })),
       byType: Object.entries(byType).map(([typeVal, count]) => ({ type: typeVal, count })),
     },

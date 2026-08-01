@@ -38,7 +38,8 @@ async function update(req, res, next) {
     const announcement = await announcementService.updateAnnouncement(
       req.params.id,
       req.user.sub,
-      req.parsed.body
+      req.parsed.body,
+      req.files || []
     );
     res.json(announcement);
   } catch (err) {

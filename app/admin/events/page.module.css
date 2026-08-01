@@ -458,6 +458,12 @@
   width: 100%;
 }
 
+.dialogFooterLeft {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
 .dialogFooterRight {
   display: flex;
   gap: 8px;

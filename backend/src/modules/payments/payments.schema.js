@@ -4,9 +4,10 @@ const createPaymentSchema = z.object({
   body: z.object({
     balanceId: z.string().uuid(),
     paymentMethodId: z.string().uuid(),
-    amount: z.number().positive(),
+    amount: z.coerce.number().positive(),
     referenceNo: z.string().optional(),
     notes: z.string().optional(),
+    proofReceipt: z.string().optional(),
   }),
 });
 
