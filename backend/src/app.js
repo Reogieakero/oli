@@ -50,6 +50,10 @@ app.get('/api/v1/health', (_req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
+app.get('/', (_req, res) => {
+  res.json({ name: 'OLI API', status: 'ok' });
+});
+
 app.use(errorHandler);
 
 module.exports = app;
