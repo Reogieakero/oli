@@ -13,7 +13,7 @@ async function list(req, res, next) {
 
 async function create(req, res, next) {
   try {
-    const feedback = await feedbackService.createFeedback(req.user.sub, req.parsed.body);
+    const feedback = await feedbackService.createFeedback(req.user?.sub ?? null, req.parsed.body);
     res.status(201).json(feedback);
   } catch (err) {
     next(err);

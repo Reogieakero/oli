@@ -18,16 +18,26 @@ async function listFeedback(user, page = 1, limit = 20) {
     prisma.feedback.count({ where }),
   ]);
 
-  return { data, total, page, limit };
+  const items = data.map((item) => {
+    if (item.isAnonymous || !item.user) {
+      const { user, ...rest } = item;
+      return rest;
+    }
+    return item;
+  });
+
+  return { data: items, total, page, limit };
 }
 
 async function createFeedback(userId, data) {
+  const category = data.category === 'faculty' ? 'FACULTY' : 'SYSTEM';
   return prisma.feedback.create({
     data: {
-      userId,
-      subject: data.subject,
+      userId: userId || null,
+      category,
+      subject: data.subject || null,
       message: data.message,
-      isAnonymous: data.isAnonymous || false,
+      isAnonymous: data.isAnonymous ?? true,
     },
   });
 }

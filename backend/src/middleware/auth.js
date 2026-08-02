@@ -46,6 +46,28 @@ async function authenticate(req, _res, next) {
   next();
 }
 
+async function optionalAuthenticate(req, _res, next) {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return next();
+  }
+
+  const token = authHeader.split(' ')[1];
+
+  try {
+    const decoded = jwt.verify(token, env.supabaseJwtSecret);
+    req.user = {
+      sub: decoded.sub,
+      role: decoded.app_role,
+      email: decoded.email,
+    };
+  } catch {
+    // Ignore invalid/expired tokens — treat as anonymous.
+  }
+
+  next();
+}
+
 function authorize(...roles) {
   return (req, _res, next) => {
     if (!req.user) {
@@ -58,4 +80,4 @@ function authorize(...roles) {
   };
 }
 
-module.exports = { authenticate, authorize };
+module.exports = { authenticate, optionalAuthenticate, authorize };

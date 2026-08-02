@@ -15,6 +15,7 @@ const PAGE_NAMES: Record<string, string> = {
   '/admin/announcements': 'Announcements',
   '/admin/documents': 'Documents',
   '/admin/students': 'Students',
+  '/admin/feedback': 'Feedback',
 }
 
 export function Navbar() {

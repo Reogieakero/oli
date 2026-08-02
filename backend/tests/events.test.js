@@ -4,8 +4,9 @@ const prisma = require('../src/config/database');
 const { v4: uuidv4 } = require('uuid');
 
 const testCourseId = uuidv4();
-const testEmail = `events_${Date.now()}@test.com`;
+const testEmail = `evt_${Date.now()}@test.com`;
 const testStudentId = `EVT-${Date.now()}`;
+const EVENT_PASSCODE = String(Math.floor(100000 + Math.random() * 900000));
 
 let facultyToken;
 let studentToken;
@@ -38,7 +39,10 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
-  if (eventId) await prisma.attendanceRecord.deleteMany({ where: { eventId } }).catch(() => {});
+  if (eventId) {
+    await prisma.attendanceRecord.deleteMany({ where: { eventId } }).catch(() => {});
+    await prisma.event.deleteMany({ where: { id: eventId } }).catch(() => {});
+  }
   await prisma.student.deleteMany({ where: { user: { email: testEmail } } });
   await prisma.user.deleteMany({ where: { email: testEmail } });
   await prisma.course.deleteMany({ where: { id: testCourseId } });
@@ -56,6 +60,7 @@ describe('Events API', () => {
         startTime: '09:00:00',
         endTime: '11:00:00',
         isMandatory: false,
+        programPasscode: EVENT_PASSCODE,
       });
 
     expect(res.status).toBe(201);

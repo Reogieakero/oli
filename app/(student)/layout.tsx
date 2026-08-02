@@ -15,8 +15,10 @@ const NAV_ITEMS = [
   { href: '/events', label: 'Events' },
   { href: '/announcements', label: 'Announcements' },
   { href: '/documents', label: 'Documents' },
+  { href: '/feedback', label: 'Feedback' },
   { href: '/balances', label: 'Balances' },
   { href: '/profile', label: 'Profile' },
+  { href: '/faq', label: 'FAQ' },
 ]
 
 export default function StudentLayout({ children }: { children: React.ReactNode }) {
@@ -111,6 +113,25 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
         <main className={styles.main}>
           {children}
         </main>
+        <footer className={styles.footer}>
+          <div className={styles.footerInner}>
+            <div className={styles.footerBrand}>
+              <Link href="/dashboard" className={styles.brand}>
+                <Image src="/Logo.jpg" alt="Liberalis" width={20} height={20} className={styles.brandLogo} style={{ borderRadius: '5px' }} />
+                <span className={styles.brandName}>Liberalis</span>
+              </Link>
+              <p className={styles.footerTagline}>Your student portal for attendance, events, and more.</p>
+            </div>
+            <nav className={styles.footerLinks}>
+              <Link href="/dashboard">Dashboard</Link>
+              <Link href="/attendance">Attendance</Link>
+              <Link href="/events">Events</Link>
+              <Link href="/feedback">Feedback</Link>
+              <Link href="/faq">FAQ</Link>
+            </nav>
+            <p className={styles.footerCopyright}>© {new Date().getFullYear()} Liberalis. All rights reserved.</p>
+          </div>
+        </footer>
       </div>
     </ToastProvider>
   )

@@ -9,6 +9,7 @@ const testStudentId = `FB-${Date.now()}`;
 
 let facultyToken;
 let studentToken;
+let anonFeedbackId;
 
 beforeAll(async () => {
   await prisma.course.upsert({
@@ -38,6 +39,9 @@ beforeAll(async () => {
 
 afterAll(async () => {
   await prisma.feedback.deleteMany({ where: { userId: { in: (await prisma.user.findMany({ where: { email: testEmail }, select: { id: true } })).map(u => u.id) } } }).catch(() => {});
+  if (anonFeedbackId) {
+    await prisma.feedback.delete({ where: { id: anonFeedbackId } }).catch(() => {});
+  }
   await prisma.student.deleteMany({ where: { user: { email: testEmail } } }).catch(() => {});
   await prisma.user.deleteMany({ where: { email: testEmail } }).catch(() => {});
   await prisma.course.deleteMany({ where: { id: testCourseId } }).catch(() => {});
@@ -46,18 +50,35 @@ afterAll(async () => {
 describe('Feedback API', () => {
   let feedbackId;
 
-  it('student can submit feedback', async () => {
+  it('student can submit feedback with category', async () => {
     const res = await request(app)
       .post('/api/v1/feedback')
       .set('Authorization', `Bearer ${studentToken}`)
       .send({
+        category: 'system',
         subject: 'Suggestion',
         message: 'Great system!',
         isAnonymous: true,
       });
 
     expect(res.status).toBe(201);
+    expect(res.body.category).toBe('SYSTEM');
     feedbackId = res.body.id;
+  });
+
+  it('anonymous user can submit feedback without a token', async () => {
+    const res = await request(app)
+      .post('/api/v1/feedback')
+      .send({
+        category: 'faculty',
+        message: 'Anonymous feedback without sign-in.',
+      });
+
+    expect(res.status).toBe(201);
+    expect(res.body.category).toBe('FACULTY');
+    expect(res.body.userId).toBeNull();
+    expect(res.body.isAnonymous).toBe(true);
+    anonFeedbackId = res.body.id;
   });
 
   it('faculty can list all feedback', async () => {

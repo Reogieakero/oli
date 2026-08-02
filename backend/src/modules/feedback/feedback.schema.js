@@ -2,8 +2,9 @@ const { z } = require('zod');
 
 const createFeedbackSchema = z.object({
   body: z.object({
-    subject: z.string().min(1).max(150),
-    message: z.string().min(1),
+    category: z.enum(['system', 'faculty']).default('system'),
+    subject: z.string().max(150).optional(),
+    message: z.string().min(1).max(5000),
     isAnonymous: z.boolean().optional(),
   }),
 });

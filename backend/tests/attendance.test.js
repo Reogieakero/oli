@@ -6,7 +6,7 @@ const { v4: uuidv4 } = require('uuid');
 const testCourseId = uuidv4();
 const testEmail = `att_${Date.now()}@test.com`;
 const testStudentId = `ATT-${Date.now()}`;
-const PASSCODE = '123456';
+const PASSCODE = String(Math.floor(100000 + Math.random() * 900000));
 
 let facultyToken;
 let studentToken;
@@ -45,12 +45,13 @@ beforeAll(async () => {
     .send({
       title: 'Attendance Test Event',
       venue: 'Auditorium',
-      eventDate: new Date(Date.now() + 86400000).toISOString().split('T')[0],
-      startTime: new Date().toISOString().substring(11, 19),
+      eventDate: new Date(Date.now() - 60000).toISOString().split('T')[0],
+      startTime: new Date(Date.now() - 300000).toISOString().substring(11, 19),
       endTime: new Date(Date.now() + 7200000).toISOString().substring(11, 19),
       isMandatory: true,
       courseId: testCourseId,
       targetYearLevel: 1,
+      programPasscode: PASSCODE,
     });
 
   eventId = eventRes.body.id;

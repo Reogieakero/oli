@@ -304,18 +304,25 @@ model Dispute {
   @@map("disputes")
 }
 
-model Feedback {
-  id          String    @id @default(uuid()) @db.Uuid
-  userId      String    @map("user_id") @db.Uuid
-  subject     String    @db.VarChar(150)
-  message     String
-  isAnonymous Boolean   @default(false) @map("is_anonymous")
-  response    String?
-  respondedAt DateTime? @map("responded_at") @db.Timestamp(6)
-  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamp(6)
-  updatedAt   DateTime  @updatedAt @map("updated_at") @db.Timestamp(6)
-  user        User      @relation(fields: [userId], references: [id])
+enum FeedbackCategory {
+  SYSTEM
+  FACULTY
+}
 
+model Feedback {
+  id          String           @id @default(uuid()) @db.Uuid
+  userId      String?          @map("user_id") @db.Uuid
+  category    FeedbackCategory @default(SYSTEM) @map("category")
+  subject     String?          @db.VarChar(150)
+  message     String
+  isAnonymous Boolean          @default(true) @map("is_anonymous")
+  response    String?
+  respondedAt DateTime?        @map("responded_at") @db.Timestamp(6)
+  createdAt   DateTime         @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt   DateTime         @updatedAt @map("updated_at") @db.Timestamp(6)
+  user        User?            @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([category], map: "idx_feedback_category")
   @@map("feedback")
 }
 

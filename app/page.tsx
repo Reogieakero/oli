@@ -104,6 +104,7 @@ export default function LandingPage() {
             Liberalis
           </div>
           <div className={styles.navLinks}>
+            <Link href="/feedback" className={styles.navLink}>Send Feedback</Link>
             <Link href="/login" className={styles.navLink}>Sign In</Link>
           </div>
         </nav>
@@ -206,6 +207,7 @@ export default function LandingPage() {
               </div>
               <div className={styles.footerCol}>
                 <span className={styles.footerColTitle}>Support</span>
+                <Link href="/feedback" className={styles.footerLink}>Send Feedback</Link>
                 <span className={styles.footerLink}>FAQ</span>
                 <span className={styles.footerLink}>Contact</span>
               </div>
