@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
-import Image from 'next/image'
 import { apiClient, ApiError } from '@/lib/apiClient'
 import { ToastProvider } from '@/components/ui/Toast/Toast'
 import { ProfileSetup } from './components/ProfileSetup'
@@ -38,10 +37,10 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
     apiClient<{ profileComplete: boolean }>('/students/me', { authenticated: true })
       .then((res) => setProfileComplete(res.profileComplete))
       .catch((err) => {
-        if (err instanceof ApiError && err.statusCode === 403) {
+        if (err instanceof ApiError && (err.statusCode === 401 || err.statusCode === 403 || err.statusCode === 404)) {
           document.cookie = 'access_token=; path=/; max-age=0'
           document.cookie = 'refresh_token=; path=/; max-age=0'
-          router.replace(`/login?error=${encodeURIComponent(err.message)}`)
+          router.replace(`/login?error=${encodeURIComponent(err.statusCode === 403 ? err.message : 'Session expired. Please sign in again.')}`)
           return
         }
         setProfileComplete(false)
@@ -75,7 +74,6 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
         <nav className={styles.nav}>
           <div className={styles.navInner}>
             <Link href="/dashboard" className={styles.brand}>
-              <Image src="/Logo.jpg" alt="Liberalis" width={24} height={24} className={styles.brandLogo} style={{ borderRadius: '5px' }} />
               <span className={styles.brandName}>Liberalis</span>
             </Link>
             <div className={styles.desktopNav}>
@@ -117,7 +115,6 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
           <div className={styles.footerInner}>
             <div className={styles.footerBrand}>
               <Link href="/dashboard" className={styles.brand}>
-                <Image src="/Logo.jpg" alt="Liberalis" width={20} height={20} className={styles.brandLogo} style={{ borderRadius: '5px' }} />
                 <span className={styles.brandName}>Liberalis</span>
               </Link>
               <p className={styles.footerTagline}>Your student portal for attendance, events, and more.</p>

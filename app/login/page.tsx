@@ -1,7 +1,6 @@
 'use client'
 
 import { Suspense, useState } from 'react'
-import Image from 'next/image'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { Card, CardBody } from '@/components/ui/Card/Card'
@@ -41,17 +40,13 @@ function StudentLoginContent() {
   return (
     <div className={styles.page}>
       <div className={styles.brandMark}>
-        <Image src="/Logo.jpg" alt="Liberalis" width={24} height={24} className={styles.brandLogo} style={{ borderRadius: '5px' }} />
         Liberalis
       </div>
 
       <Card className={styles.card}>
         <CardBody className={styles.cardBody}>
-          <div className={styles.header}>
-            <div className={styles.logo}>
-              <Image src="/Logo.jpg" alt="Liberalis" width={32} height={32} style={{ borderRadius: '8px' }} />
-            </div>
-            <h1 className={styles.title}>Student Login</h1>
+            <div className={styles.header}>
+              <h1 className={styles.title}>Student Login</h1>
             <p className={styles.subtitle}>Sign in with your Google account to access your portal</p>
           </div>
 

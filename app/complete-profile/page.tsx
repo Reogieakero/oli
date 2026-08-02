@@ -2,7 +2,6 @@
 
 import { useState, useEffect, FormEvent } from 'react'
 import { useRouter } from 'next/navigation'
-import Image from 'next/image'
 import { Button } from '@/components/ui/Button/Button'
 import { Input } from '@/components/ui/Input/Input'
 import { Select } from '@/components/ui/Select/Select'
@@ -114,7 +113,6 @@ export default function CompleteProfilePage() {
   return (
     <div className={styles.page}>
       <div className={styles.brandMark}>
-        <Image src="/Logo.jpg" alt="Liberalis" width={24} height={24} className={styles.brandLogo} style={{ borderRadius: '5px' }} />
         Liberalis
       </div>
 

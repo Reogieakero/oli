@@ -2,7 +2,6 @@
 
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
-import Image from 'next/image'
 import styles from './Sidebar.module.css'
 
 interface CategoryItem {
@@ -170,10 +169,6 @@ export function Sidebar() {
 
   return (
     <aside className={styles.sidebar}>
-      <div className={styles.brand}>
-        <Image src="/Logo.jpg" alt="Logo" width={28} height={28} className={styles.brandImg} />
-      </div>
-
       <nav className={styles.nav}>
         {CATEGORIES.map((cat) => (
           <div key={cat.label} className={styles.category}>

@@ -35,7 +35,10 @@ async function authenticate(req, _res, next) {
         where: { id: decoded.sub },
         select: { isSuspended: true },
       });
-      if (user?.isSuspended) {
+      if (!user) {
+        return next(new UnauthorizedError('Account not found'));
+      }
+      if (user.isSuspended) {
         return next(new ForbiddenError(SUSPENDED_MESSAGE));
       }
     } catch (err) {

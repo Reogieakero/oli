@@ -102,11 +102,6 @@ export default function AdminLoginPage() {
   return (
     <div className={styles.page}>
       <div className={styles.brandMark}>
-        <span className={styles.brandIcon}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-            <path d="M12 2 L14.5 9.5 L22 12 L14.5 14.5 L12 22 L9.5 14.5 L2 12 L9.5 9.5 Z" fill="currentColor" />
-          </svg>
-        </span>
         Liberalis
       </div>
 

@@ -2,7 +2,6 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import Image from 'next/image'
 import { apiClient, ApiError } from '@/lib/apiClient'
 import { Button } from '@/components/ui/Button/Button'
 import styles from './page.module.css'
@@ -30,7 +29,9 @@ export default function FeedbackPage() {
   const [submitted, setSubmitted] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const isSignedIn = typeof document !== 'undefined' && !!document.cookie.match(/(?:^|;\s*)access_token=([^;]*)/)
+  const isSignedIn =
+    typeof document !== 'undefined' &&
+    (document.cookie.match(/(?:^|;\s*)access_token=([^;]*)/)?.[1]?.length ?? 0) > 0
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -62,16 +63,11 @@ export default function FeedbackPage() {
     <div className={styles.page}>
       <nav className={styles.nav}>
         <Link href="/" className={styles.brand}>
-          <Image src="/Logo.jpg" alt="Liberalis" width={26} height={26} className={styles.brandLogo} style={{ borderRadius: '5px' }} />
           <span className={styles.brandName}>Liberalis</span>
         </Link>
-        {isSignedIn ? (
+        {isSignedIn && (
           <Link href="/dashboard" className={styles.navLink}>
             Go to Dashboard
-          </Link>
-        ) : (
-          <Link href="/" className={styles.navLink}>
-            Go to Landing Page
           </Link>
         )}
       </nav>

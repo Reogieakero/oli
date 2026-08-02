@@ -17,10 +17,6 @@ const montserrat = Montserrat({
 export const metadata: Metadata = {
   title: "Liberalis — Attendance System",
   description: "Student Attendance Transparency System",
-  icons: {
-    icon: "/Logo.jpg",
-    apple: "/Logo.jpg",
-  },
 };
 
 export default function RootLayout({

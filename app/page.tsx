@@ -156,14 +156,6 @@ export default function LandingPage() {
       <div className={styles.content}>
         <nav className={styles.nav}>
           <div className={styles.brandMark}>
-            <Image
-              src="/Logo.jpg"
-              alt="Liberalis"
-              width={28}
-              height={28}
-              className={styles.brandLogo}
-              style={{ objectFit: 'contain', borderRadius: '6px' }}
-            />
             Liberalis
           </div>
           <div className={styles.navLinks}>
@@ -286,7 +278,6 @@ export default function LandingPage() {
             <div className={styles.footerTop}>
               <div>
                 <div className={styles.footerBrand}>
-                  <Image src="/Logo.jpg" alt="Liberalis" width={24} height={24} className={styles.footerBrandLogo} style={{ borderRadius: '5px' }} />
                   Liberalis
                 </div>
               </div>
