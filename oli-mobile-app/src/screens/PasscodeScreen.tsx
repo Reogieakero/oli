@@ -10,6 +10,7 @@ import {
   View,
 } from 'react-native';
 import { colors } from '../theme';
+import QRIcon from '../components/QRIcon';
 import type { CachedSession } from '../types';
 
 interface Props {
@@ -51,7 +52,7 @@ export default function PasscodeScreen({
     >
       <View style={styles.header}>
         <View style={styles.logoBadge}>
-          <Text style={styles.logoText}>LIBERALIS</Text>
+          <QRIcon size={40} color={colors.neutral0} />
         </View>
         <Text style={styles.title}>Attendance Scanner</Text>
         <Text style={styles.subtitle}>Scan student QR codes to record attendance</Text>
@@ -152,16 +153,9 @@ const styles = StyleSheet.create({
   },
   logoBadge: {
     backgroundColor: colors.brandDark,
-    borderRadius: 10,
-    paddingHorizontal: 16,
-    paddingVertical: 6,
+    borderRadius: 12,
+    padding: 14,
     marginBottom: 14,
-  },
-  logoText: {
-    color: colors.neutral0,
-    fontWeight: '800',
-    fontSize: 18,
-    letterSpacing: 3,
   },
   title: {
     fontSize: 26,
