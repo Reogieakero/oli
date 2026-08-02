@@ -2,10 +2,32 @@
 
 import { Suspense, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { Spinner } from '@/components/ui/Spinner/Spinner'
+import { usePageTitle } from '@/lib/usePageTitle'
 import { supabase } from '@/lib/supabase'
+
+function SigningInScreen() {
+  return (
+    <div style={{
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 16,
+      minHeight: '100vh',
+      fontFamily: 'var(--font-body)',
+      fontSize: 'var(--text-sm)',
+      color: 'var(--color-neutral-900)',
+    }}>
+      <Spinner size={32} />
+      <span>Signing you in...</span>
+    </div>
+  )
+}
 
 function CallbackHandler() {
   const router = useRouter()
+  usePageTitle('Signing In')
 
   useEffect(() => {
     async function handleCallback() {
@@ -69,36 +91,12 @@ function CallbackHandler() {
     handleCallback()
   }, [router])
 
-  return (
-    <div style={{
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      minHeight: '100vh',
-      fontFamily: 'var(--font-body)',
-      fontSize: 'var(--text-sm)',
-      color: 'var(--color-neutral-900)',
-    }}>
-      Signing you in...
-    </div>
-  )
+  return <SigningInScreen />
 }
 
 export default function AuthCallbackPage() {
   return (
-    <Suspense fallback={
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        minHeight: '100vh',
-        fontFamily: 'var(--font-body)',
-        fontSize: 'var(--text-sm)',
-        color: 'var(--color-neutral-900)',
-      }}>
-        Signing you in...
-      </div>
-    }>
+    <Suspense fallback={<SigningInScreen />}>
       <CallbackHandler />
     </Suspense>
   )

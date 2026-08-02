@@ -7,11 +7,12 @@ interface LoadingOverlayProps {
   visible: boolean
   message?: string
   children?: ReactNode
+  fullscreen?: boolean
 }
 
-function LoadingOverlay({ visible, message = 'Loading...', children }: LoadingOverlayProps) {
+function LoadingOverlay({ visible, message = 'Loading...', children, fullscreen = false }: LoadingOverlayProps) {
   return (
-    <div className={styles.wrapper}>
+    <div className={`${styles.wrapper} ${fullscreen ? styles.fullscreen : ''}`}>
       {children}
       {visible && (
         <div className={styles.overlay}>

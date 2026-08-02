@@ -1,6 +1,11 @@
 import Image from 'next/image'
 import Link from 'next/link'
+import type { Metadata } from 'next'
 import styles from './page.module.css'
+
+export const metadata: Metadata = {
+  title: 'Home',
+}
 
 const DOT_COLORS = ['cardDotGreen', 'cardDotYellow', 'cardDotRed'] as const
 
@@ -165,14 +170,8 @@ export default function LandingPage() {
         </nav>
 
         <section className={styles.hero}>
-          <div className={styles.heroBadge}>
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" />
-            </svg>
-            Student Attendance System
-          </div>
           <h1 className={styles.heroTitle}>
-            Your attendance,<br /><span>transparent and fair.</span>
+            Stay informed.<br /><span>Stay ahead.</span>
           </h1>
           <p className={styles.heroSubtitle}>
             Liberalis gives students real-time access to attendance records, event schedules, balance tracking, and more. No more guessing — everything you need is in one place.

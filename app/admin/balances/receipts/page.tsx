@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { apiClient } from '@/lib/apiClient'
 import { Button } from '@/components/ui/Button/Button'
 import { Badge } from '@/components/ui/Badge/Badge'
+import { Spinner } from '@/components/ui/Spinner/Spinner'
 import { Dialog } from '@/components/ui/Dialog/Dialog'
 import { Input } from '@/components/ui/Input/Input'
 import { useToast } from '@/components/ui/Toast/Toast'
@@ -148,7 +149,7 @@ export default function AdminReceiptsPage() {
       </div>
 
       {loading ? (
-        <div className={styles.empty}>Loading...</div>
+        <div className={styles.empty}><Spinner /></div>
       ) : tab === 'pending' ? (
         pending.length === 0 ? (
           <div className={styles.empty}>No pending receipts.</div>

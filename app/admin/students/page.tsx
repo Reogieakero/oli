@@ -9,6 +9,7 @@ import { Select, type SelectOption } from '@/components/ui/Select/Select'
 import { DataTable, type Column } from '@/components/ui/DataTable/DataTable'
 import { Dialog } from '@/components/ui/Dialog/Dialog'
 import { Button } from '@/components/ui/Button/Button'
+import { LoadingOverlay } from '@/components/ui/LoadingOverlay/LoadingOverlay'
 import { useToast } from '@/components/ui/Toast/Toast'
 import styles from './page.module.css'
 
@@ -224,79 +225,81 @@ export default function AdminStudentsPage() {
               onClick={() => detailRecord && handleSuspendToggle(detailRecord)}
               disabled={suspending}
             >
-              {suspending
-                ? 'Saving...'
-                : detailRecord?.user.isSuspended
-                  ? 'Reactivate Account'
-                  : 'Suspend Account'}
+              {detailRecord?.user.isSuspended
+                ? 'Reactivate Account'
+                : 'Suspend Account'}
             </Button>
           </div>
         }
       >
-        {detailRecord && (
-          <div className={styles.detailContent}>
-            <div className={styles.drawerCard}>
-              <div className={styles.drawerCardGrid}>
-                <div className={styles.drawerField}>
-                  <span className={styles.drawerFieldLabel}>Student ID</span>
-                  <span className={styles.drawerFieldValue}>{detailRecord.studentId}</span>
+        <div style={{ position: 'relative' }}>
+          <LoadingOverlay visible={suspending} message={detailRecord?.user.isSuspended ? 'Reactivating account...' : 'Suspending account...'}>
+            {detailRecord && (
+              <div className={styles.detailContent}>
+                <div className={styles.drawerCard}>
+                  <div className={styles.drawerCardGrid}>
+                    <div className={styles.drawerField}>
+                      <span className={styles.drawerFieldLabel}>Student ID</span>
+                      <span className={styles.drawerFieldValue}>{detailRecord.studentId}</span>
+                    </div>
+                    <div className={styles.drawerField}>
+                      <span className={styles.drawerFieldLabel}>Name</span>
+                      <span className={styles.drawerFieldValue}>{detailRecord.firstName} {detailRecord.lastName}</span>
+                    </div>
+                    <div className={styles.drawerField}>
+                      <span className={styles.drawerFieldLabel}>Email</span>
+                      <span className={styles.drawerFieldValue}>{detailRecord.user.email}</span>
+                    </div>
+                    <div className={styles.drawerField}>
+                      <span className={styles.drawerFieldLabel}>Status</span>
+                      <span className={styles.drawerFieldValue}>
+                        {detailRecord.user.isSuspended ? <Badge variant="danger">Suspended</Badge> : <Badge variant="success">Active</Badge>}
+                      </span>
+                    </div>
+                    <div className={styles.drawerField}>
+                      <span className={styles.drawerFieldLabel}>Course</span>
+                      <span className={styles.drawerFieldValue}>
+                        {detailRecord.course ? <Badge variant="brand">{detailRecord.course.name}</Badge> : '—'}
+                      </span>
+                    </div>
+                    <div className={styles.drawerField}>
+                      <span className={styles.drawerFieldLabel}>Year Level</span>
+                      <span className={styles.drawerFieldValue}>Year {detailRecord.yearLevel}</span>
+                    </div>
+                    <div className={styles.drawerField}>
+                      <span className={styles.drawerFieldLabel}>Enrolled</span>
+                      <span className={styles.drawerFieldValue}>{formatDate(detailRecord.createdAt)}</span>
+                    </div>
+                  </div>
                 </div>
-                <div className={styles.drawerField}>
-                  <span className={styles.drawerFieldLabel}>Name</span>
-                  <span className={styles.drawerFieldValue}>{detailRecord.firstName} {detailRecord.lastName}</span>
-                </div>
-                <div className={styles.drawerField}>
-                  <span className={styles.drawerFieldLabel}>Email</span>
-                  <span className={styles.drawerFieldValue}>{detailRecord.user.email}</span>
-                </div>
-                <div className={styles.drawerField}>
-                  <span className={styles.drawerFieldLabel}>Status</span>
-                  <span className={styles.drawerFieldValue}>
-                    {detailRecord.user.isSuspended ? <Badge variant="danger">Suspended</Badge> : <Badge variant="success">Active</Badge>}
-                  </span>
-                </div>
-                <div className={styles.drawerField}>
-                  <span className={styles.drawerFieldLabel}>Course</span>
-                  <span className={styles.drawerFieldValue}>
-                    {detailRecord.course ? <Badge variant="brand">{detailRecord.course.name}</Badge> : '—'}
-                  </span>
-                </div>
-                <div className={styles.drawerField}>
-                  <span className={styles.drawerFieldLabel}>Year Level</span>
-                  <span className={styles.drawerFieldValue}>Year {detailRecord.yearLevel}</span>
-                </div>
-                <div className={styles.drawerField}>
-                  <span className={styles.drawerFieldLabel}>Enrolled</span>
-                  <span className={styles.drawerFieldValue}>{formatDate(detailRecord.createdAt)}</span>
-                </div>
-              </div>
-            </div>
 
-            <div className={styles.drawerSection}>
-              <h3 className={styles.drawerSectionTitle}>Records</h3>
-              <div className={styles.drawerCard}>
-                <div className={styles.drawerCardGrid}>
-                  <div className={styles.drawerField}>
-                    <span className={styles.drawerFieldLabel}>Attendance Records</span>
-                    <span className={styles.drawerFieldValue}>{detailRecord._count.attendanceRecords}</span>
-                  </div>
-                  <div className={styles.drawerField}>
-                    <span className={styles.drawerFieldLabel}>Sanctions</span>
-                    <span className={styles.drawerFieldValue}>{detailRecord._count.sanctions}</span>
-                  </div>
-                  <div className={styles.drawerField}>
-                    <span className={styles.drawerFieldLabel}>Balances</span>
-                    <span className={styles.drawerFieldValue}>{detailRecord._count.balances}</span>
-                  </div>
-                  <div className={styles.drawerField}>
-                    <span className={styles.drawerFieldLabel}>Disputes</span>
-                    <span className={styles.drawerFieldValue}>{detailRecord._count.disputes}</span>
+                <div className={styles.drawerSection}>
+                  <h3 className={styles.drawerSectionTitle}>Records</h3>
+                  <div className={styles.drawerCard}>
+                    <div className={styles.drawerCardGrid}>
+                      <div className={styles.drawerField}>
+                        <span className={styles.drawerFieldLabel}>Attendance Records</span>
+                        <span className={styles.drawerFieldValue}>{detailRecord._count.attendanceRecords}</span>
+                      </div>
+                      <div className={styles.drawerField}>
+                        <span className={styles.drawerFieldLabel}>Sanctions</span>
+                        <span className={styles.drawerFieldValue}>{detailRecord._count.sanctions}</span>
+                      </div>
+                      <div className={styles.drawerField}>
+                        <span className={styles.drawerFieldLabel}>Balances</span>
+                        <span className={styles.drawerFieldValue}>{detailRecord._count.balances}</span>
+                      </div>
+                      <div className={styles.drawerField}>
+                        <span className={styles.drawerFieldLabel}>Disputes</span>
+                        <span className={styles.drawerFieldValue}>{detailRecord._count.disputes}</span>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          </div>
-        )}
+            )}
+          </LoadingOverlay>
+        </div>
       </Dialog>
     </div>
   )

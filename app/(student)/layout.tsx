@@ -1,10 +1,13 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { apiClient, ApiError } from '@/lib/apiClient'
+import { usePageTitle } from '@/lib/usePageTitle'
 import { ToastProvider } from '@/components/ui/Toast/Toast'
+import { Spinner } from '@/components/ui/Spinner/Spinner'
+import { ConstellationBackground } from '@/components/ConstellationBackground/ConstellationBackground'
 import { ProfileSetup } from './components/ProfileSetup'
 import styles from './layout.module.css'
 
@@ -14,11 +17,22 @@ const NAV_ITEMS = [
   { href: '/events', label: 'Events' },
   { href: '/announcements', label: 'Announcements' },
   { href: '/documents', label: 'Documents' },
-  { href: '/feedback', label: 'Feedback' },
   { href: '/balances', label: 'Balances' },
   { href: '/profile', label: 'Profile' },
-  { href: '/faq', label: 'FAQ' },
 ]
+
+const PAGE_TITLES: Record<string, string> = {
+  '/dashboard': 'Dashboard',
+  '/attendance': 'Attendance',
+  '/events': 'Events',
+  '/announcements': 'Announcements',
+  '/documents': 'Documents',
+  '/feedback': 'Feedback',
+  '/balances': 'Balances',
+  '/profile': 'Profile',
+  '/faq': 'FAQ',
+  '/sanctions': 'Sanctions',
+}
 
 export default function StudentLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter()
@@ -26,6 +40,15 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
   const [authed, setAuthed] = useState(false)
   const [profileComplete, setProfileComplete] = useState<boolean | null>(null)
   const [menuOpen, setMenuOpen] = useState(false)
+
+  const pageTitle = useMemo(() => {
+    if (!pathname) return undefined
+    const exact = PAGE_TITLES[pathname]
+    if (exact) return exact
+    const segment = pathname.split('/')[1]
+    return segment ? PAGE_TITLES[`/${segment}`] : undefined
+  }, [pathname])
+  usePageTitle(pageTitle)
 
   useEffect(() => {
     const token = document.cookie.match(/(?:^|;\s*)access_token=([^;]*)/)?.[1]
@@ -51,7 +74,7 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
   if (profileComplete === null) {
     return (
       <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        Loading...
+        <Spinner size={32} />
       </div>
     )
   }
@@ -71,6 +94,7 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
   return (
     <ToastProvider>
       <div className={`${styles.layout} ${menuOpen ? styles.menuOpen : ''}`}>
+        <ConstellationBackground />
         <nav className={styles.nav}>
           <div className={styles.navInner}>
             <Link href="/dashboard" className={styles.brand}>
@@ -120,9 +144,6 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
               <p className={styles.footerTagline}>Your student portal for attendance, events, and more.</p>
             </div>
             <nav className={styles.footerLinks}>
-              <Link href="/dashboard">Dashboard</Link>
-              <Link href="/attendance">Attendance</Link>
-              <Link href="/events">Events</Link>
               <Link href="/feedback">Feedback</Link>
               <Link href="/faq">FAQ</Link>
             </nav>

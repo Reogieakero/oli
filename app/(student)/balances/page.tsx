@@ -10,6 +10,7 @@ import { Spinner } from '@/components/ui/Spinner/Spinner'
 import { Dialog } from '@/components/ui/Dialog/Dialog'
 import { Input } from '@/components/ui/Input/Input'
 import { Select } from '@/components/ui/Select/Select'
+import { LoadingOverlay } from '@/components/ui/LoadingOverlay/LoadingOverlay'
 import { useToast } from '@/components/ui/Toast/Toast'
 
 interface BalanceItem {
@@ -276,88 +277,92 @@ export default function BalancesPage() {
       </div>
 
       <Dialog open={!!payDialog} onClose={() => setPayDialog(null)} title="Submit Payment">
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          {payDialog && (
-            <div style={{ fontSize: 'var(--text-sm)' }}>
-              <strong>{payDialog.description}</strong> — ₱{parseFloat(payDialog.amount).toFixed(2)}
-            </div>
-          )}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-            <label style={{ fontSize: 'var(--text-sm)', fontWeight: 500 }}>Payment Method</label>
-            {(() => {
-              const active = methods.filter(m => m.isActive)
-              if (active.length === 0) {
-                return (
-                  <Select
-                    options={[{ value: '', label: 'No payment method yet' }]}
-                    value=""
-                    onChange={() => {}}
-                    disabled
-                    placeholder="No payment method yet"
-                  />
-                )
-              }
-              return (
-                <Select
-                  options={active.map(m => ({ value: m.id, label: m.name }))}
-                  value={payMethod}
-                  onChange={e => setPayMethod(e.target.value)}
-                />
-              )
-            })()}
-          </div>
-          {payMethod && (() => {
-            const m = methods.find(m => m.id === payMethod)
-            if (!m) return null
-            return (
-              <div style={{ padding: '12px 14px', background: 'var(--color-muted-bg)', borderRadius: 'var(--radius-control)', fontSize: 'var(--text-sm)', display: 'flex', flexDirection: 'column', gap: 4 }}>
-                <div style={{ fontWeight: 600 }}>{m.name}</div>
-                {m.accountName && <div>Account: {m.accountName}</div>}
-                {m.accountNumber && <div>Number: {m.accountNumber}</div>}
-                {m.instructions && <div style={{ color: 'var(--color-muted-fg)', marginTop: 2 }}>{m.instructions}</div>}
+        <div style={{ position: 'relative' }}>
+          <LoadingOverlay visible={submitting} message="Submitting payment...">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              {payDialog && (
+                <div style={{ fontSize: 'var(--text-sm)' }}>
+                  <strong>{payDialog.description}</strong> — ₱{parseFloat(payDialog.amount).toFixed(2)}
+                </div>
+              )}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                <label style={{ fontSize: 'var(--text-sm)', fontWeight: 500 }}>Payment Method</label>
+                {(() => {
+                  const active = methods.filter(m => m.isActive)
+                  if (active.length === 0) {
+                    return (
+                      <Select
+                        options={[{ value: '', label: 'No payment method yet' }]}
+                        value=""
+                        onChange={() => {}}
+                        disabled
+                        placeholder="No payment method yet"
+                      />
+                    )
+                  }
+                  return (
+                    <Select
+                      options={active.map(m => ({ value: m.id, label: m.name }))}
+                      value={payMethod}
+                      onChange={e => setPayMethod(e.target.value)}
+                    />
+                  )
+                })()}
               </div>
-            )
-          })()}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-            <label style={{ fontSize: 'var(--text-sm)', fontWeight: 500 }}>Amount</label>
-            <Input type="number" value={payAmount} onChange={e => setPayAmount(e.target.value)} />
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-            <label style={{ fontSize: 'var(--text-sm)', fontWeight: 500 }}>Reference No. (optional)</label>
-            <Input value={payRef} onChange={e => setPayRef(e.target.value)} />
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-            <label style={{ fontSize: 'var(--text-sm)', fontWeight: 500 }}>Proof of Payment (optional)</label>
-            <label style={{
-              display: 'flex', alignItems: 'center', gap: 8,
-              padding: '8px 14px', border: '1px dashed var(--color-border)',
-              borderRadius: 'var(--radius-control)', cursor: 'pointer',
-              fontSize: 'var(--text-sm)', color: 'var(--color-muted-fg)',
-              transition: 'border-color 0.15s',
-            }}
-              onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--color-brand-dark)'}
-              onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--color-border)'}
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
-                <polyline points="17 8 12 3 7 8" />
-                <line x1="12" y1="3" x2="12" y2="15" />
-              </svg>
-              {payFile ? payFile.name : 'Choose file'}
-              <input
-                type="file"
-                accept="image/*"
-                onChange={e => setPayFile(e.target.files?.[0] || null)}
-                style={{ display: 'none' }}
-              />
-            </label>
-          </div>
-          <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-            <Button variant="ghost" onClick={() => setPayDialog(null)}>Cancel</Button>
-            <Button variant="primary" onClick={handleSubmitReceipt} disabled={submitting || !payMethod || !payAmount}>
-              Submit Payment
-            </Button>
-          </div>
+              {payMethod && (() => {
+                const m = methods.find(m => m.id === payMethod)
+                if (!m) return null
+                return (
+                  <div style={{ padding: '12px 14px', background: 'var(--color-muted-bg)', borderRadius: 'var(--radius-control)', fontSize: 'var(--text-sm)', display: 'flex', flexDirection: 'column', gap: 4 }}>
+                    <div style={{ fontWeight: 600 }}>{m.name}</div>
+                    {m.accountName && <div>Account: {m.accountName}</div>}
+                    {m.accountNumber && <div>Number: {m.accountNumber}</div>}
+                    {m.instructions && <div style={{ color: 'var(--color-muted-fg)', marginTop: 2 }}>{m.instructions}</div>}
+                  </div>
+                )
+              })()}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                <label style={{ fontSize: 'var(--text-sm)', fontWeight: 500 }}>Amount</label>
+                <Input type="number" value={payAmount} onChange={e => setPayAmount(e.target.value)} />
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                <label style={{ fontSize: 'var(--text-sm)', fontWeight: 500 }}>Reference No. (optional)</label>
+                <Input value={payRef} onChange={e => setPayRef(e.target.value)} />
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                <label style={{ fontSize: 'var(--text-sm)', fontWeight: 500 }}>Proof of Payment (optional)</label>
+                <label style={{
+                  display: 'flex', alignItems: 'center', gap: 8,
+                  padding: '8px 14px', border: '1px dashed var(--color-border)',
+                  borderRadius: 'var(--radius-control)', cursor: 'pointer',
+                  fontSize: 'var(--text-sm)', color: 'var(--color-muted-fg)',
+                  transition: 'border-color 0.15s',
+                }}
+                  onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--color-brand-dark)'}
+                  onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--color-border)'}
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
+                    <polyline points="17 8 12 3 7 8" />
+                    <line x1="12" y1="3" x2="12" y2="15" />
+                  </svg>
+                  {payFile ? payFile.name : 'Choose file'}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={e => setPayFile(e.target.files?.[0] || null)}
+                    style={{ display: 'none' }}
+                  />
+                </label>
+              </div>
+              <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+                <Button variant="ghost" onClick={() => setPayDialog(null)}>Cancel</Button>
+                <Button variant="primary" onClick={handleSubmitReceipt} disabled={submitting || !payMethod || !payAmount}>
+                  Submit Payment
+                </Button>
+              </div>
+            </div>
+          </LoadingOverlay>
         </div>
       </Dialog>
     </div>

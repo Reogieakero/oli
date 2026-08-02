@@ -8,6 +8,7 @@ import { Select, type SelectOption } from '@/components/ui/Select/Select'
 import { DataTable, type Column } from '@/components/ui/DataTable/DataTable'
 import { Dialog } from '@/components/ui/Dialog/Dialog'
 import { Button } from '@/components/ui/Button/Button'
+import { LoadingOverlay } from '@/components/ui/LoadingOverlay/LoadingOverlay'
 import { useToast } from '@/components/ui/Toast/Toast'
 import styles from './page.module.css'
 
@@ -217,54 +218,58 @@ export default function AdminFeedbackPage() {
                 onClick={handleRespond}
                 disabled={!responseText.trim() || responding}
               >
-                {responding ? 'Sending…' : viewRecord.response ? 'Update Response' : 'Send Response'}
+                {viewRecord.response ? 'Update Response' : 'Send Response'}
               </Button>
             </div>
           ) : undefined
         }
       >
-        {viewRecord && (
-          <div className={styles.detailContent}>
-            <div className={styles.detailMeta}>
-              <Badge variant={viewRecord.category === 'FACULTY' ? 'warning' : 'brand'}>
-                {viewRecord.category === 'FACULTY' ? 'For the Faculty' : 'For the System'}
-              </Badge>
-              {viewRecord.isAnonymous ? (
-                <Badge variant="neutral">Anonymous</Badge>
-              ) : (
-                <span className={styles.detailFrom}>
-                  {viewRecord.user?.student
-                    ? `${viewRecord.user.student.firstName} ${viewRecord.user.student.lastName}`
-                    : viewRecord.user?.email}
-                </span>
-              )}
-              <span className={styles.detailDate}>{formatDate(viewRecord.createdAt)}</span>
-            </div>
+        <div style={{ position: 'relative' }}>
+          <LoadingOverlay visible={responding} message="Sending response...">
+            {viewRecord && (
+              <div className={styles.detailContent}>
+                <div className={styles.detailMeta}>
+                  <Badge variant={viewRecord.category === 'FACULTY' ? 'warning' : 'brand'}>
+                    {viewRecord.category === 'FACULTY' ? 'For the Faculty' : 'For the System'}
+                  </Badge>
+                  {viewRecord.isAnonymous ? (
+                    <Badge variant="neutral">Anonymous</Badge>
+                  ) : (
+                    <span className={styles.detailFrom}>
+                      {viewRecord.user?.student
+                        ? `${viewRecord.user.student.firstName} ${viewRecord.user.student.lastName}`
+                        : viewRecord.user?.email}
+                    </span>
+                  )}
+                  <span className={styles.detailDate}>{formatDate(viewRecord.createdAt)}</span>
+                </div>
 
-            {viewRecord.subject && (
-              <div className={styles.detailField}>
-                <span className={styles.detailLabel}>Subject</span>
-                <p className={styles.detailText}>{viewRecord.subject}</p>
+                {viewRecord.subject && (
+                  <div className={styles.detailField}>
+                    <span className={styles.detailLabel}>Subject</span>
+                    <p className={styles.detailText}>{viewRecord.subject}</p>
+                  </div>
+                )}
+
+                <div className={styles.detailField}>
+                  <span className={styles.detailLabel}>Message</span>
+                  <p className={styles.detailMessage}>{viewRecord.message}</p>
+                </div>
+
+                <div className={styles.detailField}>
+                  <span className={styles.detailLabel}>Response</span>
+                  <textarea
+                    className={styles.responseInput}
+                    value={responseText}
+                    onChange={(e) => setResponseText(e.target.value)}
+                    placeholder="Write a response to this feedback…"
+                    rows={4}
+                  />
+                </div>
               </div>
             )}
-
-            <div className={styles.detailField}>
-              <span className={styles.detailLabel}>Message</span>
-              <p className={styles.detailMessage}>{viewRecord.message}</p>
-            </div>
-
-            <div className={styles.detailField}>
-              <span className={styles.detailLabel}>Response</span>
-              <textarea
-                className={styles.responseInput}
-                value={responseText}
-                onChange={(e) => setResponseText(e.target.value)}
-                placeholder="Write a response to this feedback…"
-                rows={4}
-              />
-            </div>
-          </div>
-        )}
+          </LoadingOverlay>
+        </div>
       </Dialog>
     </div>
   )

@@ -15,7 +15,10 @@ const montserrat = Montserrat({
 });
 
 export const metadata: Metadata = {
-  title: "Liberalis — Attendance System",
+  title: {
+    default: "Liberalis — Attendance System",
+    template: "%s — Liberalis",
+  },
   description: "Student Attendance Transparency System",
 };
 

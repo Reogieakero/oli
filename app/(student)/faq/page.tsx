@@ -1,4 +1,9 @@
+import type { Metadata } from 'next'
 import styles from './page.module.css'
+
+export const metadata: Metadata = {
+  title: 'FAQ',
+}
 
 const SECTIONS = [
   {

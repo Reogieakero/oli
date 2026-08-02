@@ -4,6 +4,8 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { apiClient, ApiError } from '@/lib/apiClient'
 import { Button } from '@/components/ui/Button/Button'
+import { LoadingOverlay } from '@/components/ui/LoadingOverlay/LoadingOverlay'
+import { usePageTitle } from '@/lib/usePageTitle'
 import styles from './page.module.css'
 
 type Category = 'system' | 'faculty'
@@ -22,6 +24,7 @@ const CATEGORIES: { id: Category; title: string; desc: string }[] = [
 ]
 
 export default function FeedbackPage() {
+  usePageTitle('Send Feedback')
   const [category, setCategory] = useState<Category>('system')
   const [subject, setSubject] = useState('')
   const [message, setMessage] = useState('')
@@ -60,14 +63,22 @@ export default function FeedbackPage() {
   }
 
   return (
-    <div className={styles.page}>
-      <nav className={styles.nav}>
+    <LoadingOverlay visible={submitting} message="Sending your feedback..." fullscreen>
+      <div className={styles.page}>
+        <nav className={styles.nav}>
         <Link href="/" className={styles.brand}>
           <span className={styles.brandName}>Liberalis</span>
         </Link>
-        {isSignedIn && (
+        {isSignedIn ? (
           <Link href="/dashboard" className={styles.navLink}>
             Go to Dashboard
+          </Link>
+        ) : (
+          <Link href="/" className={styles.navLink}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ verticalAlign: 'middle', marginRight: 6 }}>
+              <polyline points="15 18 9 12 15 6" />
+            </svg>
+            <span style={{ verticalAlign: 'middle' }}>Back to Landing Page</span>
           </Link>
         )}
       </nav>
@@ -147,12 +158,13 @@ export default function FeedbackPage() {
               {error && <div className={styles.error}>{error}</div>}
 
               <Button type="submit" disabled={!message.trim() || submitting} className={styles.submitBtn}>
-                {submitting ? 'Sending…' : 'Send Feedback Anonymously'}
+                Send Feedback Anonymously
               </Button>
             </form>
           )}
         </div>
       </main>
-    </div>
+      </div>
+    </LoadingOverlay>
   )
 }

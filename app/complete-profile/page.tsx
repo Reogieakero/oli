@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/Button/Button'
 import { Input } from '@/components/ui/Input/Input'
 import { Select } from '@/components/ui/Select/Select'
+import { LoadingOverlay } from '@/components/ui/LoadingOverlay/LoadingOverlay'
+import { usePageTitle } from '@/lib/usePageTitle'
 import styles from './CompleteProfile.module.css'
 
 interface Course {
@@ -25,6 +27,7 @@ export default function CompleteProfilePage() {
   const [loadingCourses, setLoadingCourses] = useState(true)
   const [error, setError] = useState('')
   const [studentIdError, setStudentIdError] = useState('')
+  usePageTitle('Complete Your Profile')
 
   useEffect(() => {
     if (studentId && !/^20\d{2}-\d{4}$/.test(studentId)) {
@@ -111,10 +114,11 @@ export default function CompleteProfilePage() {
   ]
 
   return (
-    <div className={styles.page}>
-      <div className={styles.brandMark}>
-        Liberalis
-      </div>
+    <LoadingOverlay visible={loading} message="Saving your profile..." fullscreen>
+      <div className={styles.page}>
+        <div className={styles.brandMark}>
+          Liberalis
+        </div>
 
       <div className={styles.card}>
         <div className={styles.cardBody}>
@@ -184,11 +188,12 @@ export default function CompleteProfilePage() {
             </div>
 
             <Button type="submit" disabled={loading || loadingCourses} size="lg" className={styles.submitBtn}>
-              {loading ? 'Saving...' : 'Complete Profile'}
+              Complete Profile
             </Button>
           </form>
         </div>
       </div>
-    </div>
+      </div>
+    </LoadingOverlay>
   )
 }

@@ -4,6 +4,8 @@ import { Suspense, useState } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { Card, CardBody } from '@/components/ui/Card/Card'
+import { LoadingOverlay } from '@/components/ui/LoadingOverlay/LoadingOverlay'
+import { usePageTitle } from '@/lib/usePageTitle'
 import { supabase } from '@/lib/supabase'
 import styles from './StudentLogin.module.css'
 
@@ -19,6 +21,7 @@ const GOOGLE_ICON = (
 function StudentLoginContent() {
   const searchParams = useSearchParams()
   const [loading, setLoading] = useState(false)
+  usePageTitle('Student Login')
 
   const rawError = searchParams.get('error')
   const ignoredErrors = ['no_session', 'exchange_failed', 'server_error']
@@ -38,10 +41,11 @@ function StudentLoginContent() {
   }
 
   return (
-    <div className={styles.page}>
-      <div className={styles.brandMark}>
-        Liberalis
-      </div>
+    <LoadingOverlay visible={loading} message="Redirecting to Google..." fullscreen>
+      <div className={styles.page}>
+        <div className={styles.brandMark}>
+          Liberalis
+        </div>
 
       <Card className={styles.card}>
         <CardBody className={styles.cardBody}>
@@ -67,7 +71,7 @@ function StudentLoginContent() {
             disabled={loading}
           >
             {GOOGLE_ICON}
-            {loading ? 'Redirecting...' : 'Sign in with Google'}
+            Sign in with Google
           </button>
 
           <div className={styles.dividerRow}>
@@ -87,12 +91,13 @@ function StudentLoginContent() {
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <line x1="19" y1="12" x2="5" y2="12" /><polyline points="12 19 5 12 12 5" />
               </svg>
-              Back to Home
+              Back to Landing Page
             </Link>
           </div>
         </CardBody>
       </Card>
-    </div>
+      </div>
+    </LoadingOverlay>
   )
 }
 

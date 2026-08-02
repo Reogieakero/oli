@@ -5,6 +5,8 @@ import { z } from 'zod'
 import { Button } from '@/components/ui/Button/Button'
 import { Input } from '@/components/ui/Input/Input'
 import { Card, CardBody } from '@/components/ui/Card/Card'
+import { LoadingOverlay } from '@/components/ui/LoadingOverlay/LoadingOverlay'
+import { usePageTitle } from '@/lib/usePageTitle'
 import styles from './AdminLogin.module.css'
 
 const loginSchema = z.object({
@@ -21,6 +23,7 @@ export default function AdminLoginPage() {
   const [serverError, setServerError] = useState('')
   const [loading, setLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
+  usePageTitle('Admin Login')
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
@@ -100,10 +103,11 @@ export default function AdminLoginPage() {
   )
 
   return (
-    <div className={styles.page}>
-      <div className={styles.brandMark}>
-        Liberalis
-      </div>
+    <LoadingOverlay visible={loading} message="Signing in..." fullscreen>
+      <div className={styles.page}>
+        <div className={styles.brandMark}>
+          Liberalis
+        </div>
 
       <Card className={styles.card}>
         <CardBody className={styles.cardBody}>
@@ -162,7 +166,7 @@ export default function AdminLoginPage() {
             </div>
 
             <Button type="submit" disabled={loading} size="lg" className={styles.submitBtn}>
-              {loading ? 'Signing in...' : 'Get Started'}
+              Get Started
             </Button>
           </form>
 
@@ -173,6 +177,7 @@ export default function AdminLoginPage() {
           </div>
         </CardBody>
       </Card>
-    </div>
+      </div>
+    </LoadingOverlay>
   )
 }
