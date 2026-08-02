@@ -1,5 +1,4 @@
 import Constants from 'expo-constants';
-import { debugLog } from './log';
 
 function resolveApiBase(): string {
   const fromEnv = process.env.EXPO_PUBLIC_API_URL;
@@ -19,11 +18,3 @@ function resolveApiBase(): string {
 
 export const API_BASE_URL = resolveApiBase();
 export const API_TIMEOUT_MS = 8000;
-
-export const DEBUG_INFO = {
-  envApiUrl: process.env.EXPO_PUBLIC_API_URL ?? null,
-  hostUri: Constants.expoConfig?.hostUri ?? null,
-  apiBaseUrl: API_BASE_URL,
-};
-
-debugLog('config loaded:', DEBUG_INFO);

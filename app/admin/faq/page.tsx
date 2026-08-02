@@ -28,6 +28,7 @@ const SECTIONS = [
       { q: 'How do I create a new event?', a: 'Go to Events and click "New Event". Fill in the title, description, venue, date and time, select the course and target year level if applicable, set whether attendance is mandatory, and optionally add a cover photo. A unique program passcode will be auto-generated for QR scanning.' },
       { q: 'What is the program passcode used for?', a: 'The passcode is displayed during the event for students to scan via QR. It can be regenerated if needed. The passcode can also be set to expire after a specific time.' },
       { q: 'How do I manage event attendance?', a: 'During an event, students scan the QR code using their device. You can also manually mark attendance from the Attendance page if a student had issues scanning.' },
+      { q: 'What does the "Finalize" button do?', a: 'After an event ends, click Finalize to automatically create Absent records for every eligible student who was not scanned or manually marked Present. It records unexcused absences in one click. You can still correct any records afterward from the Attendance page.' },
     ],
   },
   {

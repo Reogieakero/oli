@@ -13,6 +13,7 @@ model User {
   email        String     @unique @db.VarChar(150)
   passwordHash String?    @map("password_hash") @db.VarChar(255)
   role         UserRole
+  isSuspended  Boolean    @default(false) @map("is_suspended")
   createdAt    DateTime   @default(now()) @map("created_at") @db.Timestamp(6)
   updatedAt    DateTime   @updatedAt @map("updated_at") @db.Timestamp(6)
   googleId     String?    @unique @map("google_id") @db.VarChar(255)

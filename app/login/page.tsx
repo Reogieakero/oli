@@ -1,8 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { Suspense, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
 import { Card, CardBody } from '@/components/ui/Card/Card'
 import { supabase } from '@/lib/supabase'
 import styles from './StudentLogin.module.css'
@@ -16,8 +17,13 @@ const GOOGLE_ICON = (
   </svg>
 )
 
-export default function StudentLoginPage() {
+function StudentLoginContent() {
+  const searchParams = useSearchParams()
   const [loading, setLoading] = useState(false)
+
+  const rawError = searchParams.get('error')
+  const ignoredErrors = ['no_session', 'exchange_failed', 'server_error']
+  const errorMessage = rawError && !ignoredErrors.includes(rawError) ? rawError : null
 
   async function handleGoogleSignIn() {
     setLoading(true)
@@ -48,6 +54,17 @@ export default function StudentLoginPage() {
             <h1 className={styles.title}>Student Login</h1>
             <p className={styles.subtitle}>Sign in with your Google account to access your portal</p>
           </div>
+
+          {errorMessage && (
+            <div className={styles.errorBanner} role="alert">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="8" x2="12" y2="12" />
+                <line x1="12" y1="16" x2="12.01" y2="16" />
+              </svg>
+              <span>{errorMessage}</span>
+            </div>
+          )}
 
           <button
             className={styles.googleBtn}
@@ -81,5 +98,13 @@ export default function StudentLoginPage() {
         </CardBody>
       </Card>
     </div>
+  )
+}
+
+export default function StudentLoginPage() {
+  return (
+    <Suspense fallback={null}>
+      <StudentLoginContent />
+    </Suspense>
   )
 }

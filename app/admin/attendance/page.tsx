@@ -218,7 +218,11 @@ export default function AdminAttendancePage() {
       header: 'Method',
       render: (row) => {
         if (!row.scanMethod) return <span className={styles.muted}>—</span>
-        return row.scanMethod === 'qr_scan' ? 'QR Scan' : 'Manual'
+        return row.scanMethod === 'qr_scan' ? (
+          <Badge variant="brand">Scanned</Badge>
+        ) : (
+          <Badge variant="neutral">Manual</Badge>
+        )
       },
     },
     {

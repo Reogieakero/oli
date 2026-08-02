@@ -207,6 +207,27 @@ export default function StudentDashboardPage() {
     return () => { active = false }
   }, [profile?.avatarUrl])
 
+  useEffect(() => {
+    let active = true
+
+    async function refreshAttendance() {
+      try {
+        const attRes = await apiClient<AttendanceHistoryResponse>('/attendance/history?limit=1000', { authenticated: true })
+        if (active) setAttendanceData(attRes.data)
+      } catch {
+        /* keep previous data on error */
+      }
+    }
+
+    const timer = setInterval(refreshAttendance, 8000)
+    refreshAttendance()
+
+    return () => {
+      active = false
+      clearInterval(timer)
+    }
+  }, [])
+
   return (
     <div className={styles.page}>
       <div className={styles.blobCircles}>
@@ -393,19 +414,24 @@ export default function StudentDashboardPage() {
                   }}>
                     <div style={{
                       display: 'flex',
-                      flexDirection: 'column',
                       alignItems: 'center',
                       justifyContent: 'center',
                       width: 48,
                       height: 48,
                       borderRadius: '50%',
-                      background: r.status === 'present' ? 'var(--color-status-success-bg)' : r.status === 'late' ? 'var(--color-status-warning-bg)' : 'var(--color-status-danger-bg)',
-                      color: r.status === 'present' ? 'var(--color-status-success)' : r.status === 'late' ? 'var(--color-status-warning)' : 'var(--color-status-danger)',
+                      background: 'var(--color-muted-bg)',
+                      color: 'var(--color-brand-dark)',
                       fontWeight: 700,
                       fontSize: 'var(--text-lg)',
+                      overflow: 'hidden',
                       flexShrink: 0,
                     }}>
-                      {r.status === 'present' ? 'P' : r.status === 'late' ? 'L' : 'A'}
+                      {avatarSrc ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={avatarSrc} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      ) : (
+                        `${profile?.firstName?.charAt(0) ?? ''}${profile?.lastName?.charAt(0) ?? ''}`
+                      )}
                     </div>
                     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
                       <span style={{ fontSize: 'var(--text-sm)', fontWeight: 600 }}>{r.event.title}</span>

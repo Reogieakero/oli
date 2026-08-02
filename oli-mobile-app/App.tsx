@@ -5,6 +5,7 @@ import NetInfo from '@react-native-community/netinfo';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import PasscodeScreen from './src/screens/PasscodeScreen';
 import ScanScreen from './src/screens/ScanScreen';
+import HistoryScreen from './src/screens/HistoryScreen';
 import SyncBanner from './src/components/SyncBanner';
 import { activateEvent, ApiError, isNetworkError, submitScan } from './src/api';
 import { debugLog, debugWarn } from './src/log';
@@ -14,11 +15,12 @@ import {
   getSession,
   setPending,
   setSession,
+  updateHistorySynced,
 } from './src/storage';
 import type { CachedSession, PendingScan } from './src/types';
 import { colors } from './src/theme';
 
-type Screen = 'passcode' | 'scan';
+type Screen = 'passcode' | 'scan' | 'history';
 
 export default function App() {
   const [session, setSessionState] = useState<CachedSession | null>(null);
@@ -55,10 +57,12 @@ export default function App() {
             scannerDeviceId: deviceIdRef.current,
             scannedAt: p.scannedAt,
           });
+          await updateHistorySynced(p.id, true);
         } catch (err) {
           if (isNetworkError(err)) {
             kept.push(p);
           } else if (err instanceof ApiError && err.statusCode === 409) {
+            await updateHistorySynced(p.id, true);
             kept.push({
               ...p,
               status: 'duplicate',
@@ -91,6 +95,7 @@ export default function App() {
       setSessionState(cached);
       if (cached) setScreen('scan');
       await refreshPending();
+      await syncNow();
     })();
 
     const netSub = NetInfo.addEventListener((state) => {
@@ -137,7 +142,7 @@ export default function App() {
             setScreen('scan');
           } else {
             setError(
-              "You're offline and there's no saved event for this code. Connect to the internet to start an event, or resume a saved one."
+              "You're offline, so this event can't be started right now. Connect to the internet to start it, or resume an event you already opened."
             );
           }
         } else if (err instanceof ApiError) {
@@ -175,6 +180,14 @@ export default function App() {
     void syncNow();
   }, [syncNow]);
 
+  const handleOpenHistory = useCallback(() => {
+    setScreen('history');
+  }, []);
+
+  const handleCloseHistory = useCallback(() => {
+    setScreen(session ? 'scan' : 'passcode');
+  }, [session]);
+
   return (
     <SafeAreaProvider>
       <SafeAreaView style={styles.safe} edges={['top']}>
@@ -186,7 +199,9 @@ export default function App() {
           onSync={() => void syncNow()}
         />
         <View style={styles.content}>
-          {screen === 'passcode' || !session ? (
+          {screen === 'history' ? (
+            <HistoryScreen onClose={handleCloseHistory} />
+          ) : screen === 'passcode' || !session ? (
             <PasscodeScreen
               cachedSession={session}
               busy={busy}
@@ -194,6 +209,7 @@ export default function App() {
               onActivate={handleActivate}
               onResume={handleResume}
               onClearSession={handleEnd}
+              onOpenHistory={handleOpenHistory}
             />
           ) : (
             <ScanScreen
@@ -201,6 +217,7 @@ export default function App() {
               deviceId={deviceIdRef.current}
               onScannedOffline={handleScannedOffline}
               onOnlineSync={handleOnlineSync}
+              onOpenHistory={handleOpenHistory}
               onEnd={handleEnd}
             />
           )}

@@ -10,7 +10,6 @@ import {
   View,
 } from 'react-native';
 import { colors } from '../theme';
-import { API_BASE_URL, DEBUG_INFO } from '../config';
 import type { CachedSession } from '../types';
 
 interface Props {
@@ -20,6 +19,7 @@ interface Props {
   onActivate: (passcode: string) => void;
   onResume: () => void;
   onClearSession: () => void;
+  onOpenHistory: () => void;
 }
 
 function formatWindow(session: CachedSession): string {
@@ -40,6 +40,7 @@ export default function PasscodeScreen({
   onActivate,
   onResume,
   onClearSession,
+  onOpenHistory,
 }: Props) {
   const [passcode, setPasscode] = useState('');
 
@@ -66,7 +67,7 @@ export default function PasscodeScreen({
               {formatWindow(cachedSession)}
             </Text>
             <Text style={styles.cardMeta}>
-              {cachedSession.students.length} students in roster · {cachedSession.passcode}
+              {cachedSession.students.length} students on the list · Passcode: {cachedSession.passcode}
             </Text>
             <View style={styles.cardActions}>
               <TouchableOpacity
@@ -121,19 +122,16 @@ export default function PasscodeScreen({
             <Text style={styles.errorText}>{error}</Text>
           </View>
         ) : null}
-      </View>
 
-      {__DEV__ ? (
-        <View style={styles.footer}>
-          <Text style={styles.footerLabel}>DEBUG</Text>
-          <Text style={styles.footerText}>apiBaseUrl: {API_BASE_URL}</Text>
-          <Text style={styles.footerText}>
-            EXPO_PUBLIC_API_URL: {DEBUG_INFO.envApiUrl ?? '(not set)'}
-          </Text>
-          <Text style={styles.footerText}>hostUri: {DEBUG_INFO.hostUri ?? '(none)'}</Text>
-          {error ? <Text style={styles.footerError}>lastError: {error}</Text> : null}
-        </View>
-      ) : null}
+        <TouchableOpacity
+          style={styles.historyBtn}
+          onPress={onOpenHistory}
+          disabled={busy}
+          activeOpacity={0.85}
+        >
+          <Text style={styles.historyBtnText}>Scanned QR — view history on this phone</Text>
+        </TouchableOpacity>
+      </View>
     </KeyboardAvoidingView>
   );
 }
@@ -145,22 +143,22 @@ const styles = StyleSheet.create({
   },
   header: {
     alignItems: 'center',
-    backgroundColor: colors.brandDark,
-    paddingTop: 28,
-    paddingBottom: 36,
+    backgroundColor: colors.neutral0,
+    paddingTop: 40,
+    paddingBottom: 28,
     paddingHorizontal: 24,
-    borderBottomLeftRadius: 28,
-    borderBottomRightRadius: 28,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
   },
   logoBadge: {
-    backgroundColor: colors.neutral0,
-    borderRadius: 12,
+    backgroundColor: colors.brandDark,
+    borderRadius: 10,
     paddingHorizontal: 16,
     paddingVertical: 6,
     marginBottom: 14,
   },
   logoText: {
-    color: colors.brandDark,
+    color: colors.neutral0,
     fontWeight: '800',
     fontSize: 18,
     letterSpacing: 3,
@@ -168,37 +166,37 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 26,
     fontWeight: '800',
-    color: colors.neutral0,
+    color: colors.neutral900,
   },
   subtitle: {
     fontSize: 14,
-    color: colors.brandLight,
+    color: colors.mutedFg,
     marginTop: 6,
     textAlign: 'center',
   },
   body: {
     flex: 1,
     paddingHorizontal: 20,
-    marginTop: -20,
+    marginTop: 24,
   },
   card: {
     backgroundColor: colors.neutral0,
-    borderRadius: 16,
+    borderRadius: 14,
     borderWidth: 1,
     borderColor: colors.border,
     padding: 18,
     marginBottom: 16,
     gap: 6,
     shadowColor: colors.neutral900,
-    shadowOpacity: 0.06,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 2 },
     elevation: 2,
   },
   cardLabel: {
     fontSize: 11,
     letterSpacing: 1.2,
-    color: colors.brandPrimary,
+    color: colors.mutedFg,
     fontWeight: '700',
     textTransform: 'uppercase',
   },
@@ -267,24 +265,18 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 20,
   },
-  footer: {
-    paddingHorizontal: 20,
-    paddingBottom: 12,
-    gap: 2,
+  historyBtn: {
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 10,
+    paddingVertical: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.neutral0,
   },
-  footerLabel: {
-    fontSize: 10,
-    letterSpacing: 1,
-    color: colors.mutedFg,
+  historyBtnText: {
+    color: colors.brandPrimary,
+    fontSize: 14,
     fontWeight: '700',
-  },
-  footerText: {
-    fontSize: 11,
-    color: colors.mutedFg,
-  },
-  footerError: {
-    fontSize: 11,
-    color: colors.danger,
-    marginTop: 4,
   },
 });

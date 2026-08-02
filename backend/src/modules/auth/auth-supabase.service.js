@@ -1,7 +1,7 @@
 const crypto = require('crypto');
 const prisma = require('../../config/database');
 const supabase = require('../../config/supabase');
-const { generateTokens } = require('./auth.service');
+const { generateTokens, assertNotSuspended } = require('./auth.service');
 
 async function exchangeSupabaseToken(supabaseAccessToken) {
   const { data: { user: supabaseUser }, error } = await supabase.auth.getUser(supabaseAccessToken);
@@ -18,6 +18,7 @@ async function exchangeSupabaseToken(supabaseAccessToken) {
     include: { student: true },
   });
   if (existingByGoogleId) {
+    assertNotSuspended(existingByGoogleId);
     const tokens = generateTokens(existingByGoogleId);
     return {
       accessToken: tokens.accessToken,
@@ -31,6 +32,7 @@ async function exchangeSupabaseToken(supabaseAccessToken) {
     include: { student: true },
   });
   if (existingByEmail) {
+    assertNotSuspended(existingByEmail);
     const updated = await prisma.user.update({
       where: { id: existingByEmail.id },
       data: { googleId },

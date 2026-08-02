@@ -1,10 +1,11 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import type { CachedSession, PendingScan } from './types';
+import type { CachedSession, PendingScan, ScanHistoryEntry } from './types';
 
 const KEYS = {
   session: 'oli:scanner:session',
   pending: 'oli:scanner:pending',
   deviceId: 'oli:scanner:deviceId',
+  history: 'oli:scanner:history',
 };
 
 function randomId(): string {
@@ -70,5 +71,37 @@ export async function getDeviceId(): Promise<string> {
     return id;
   } catch {
     return randomId();
+  }
+}
+
+export async function getHistory(): Promise<ScanHistoryEntry[]> {
+  try {
+    const raw = await AsyncStorage.getItem(KEYS.history);
+    return raw ? (JSON.parse(raw) as ScanHistoryEntry[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+export async function addHistoryEntry(entry: Omit<ScanHistoryEntry, 'id'>): Promise<ScanHistoryEntry> {
+  const history = await getHistory();
+  const full: ScanHistoryEntry = { ...entry, id: randomId() };
+  await setHistory([full, ...history]);
+  return full;
+}
+
+export async function updateHistorySynced(pendingId: string, synced: boolean): Promise<void> {
+  const history = await getHistory();
+  const updated = history.map((h) =>
+    h.pendingId === pendingId ? { ...h, synced } : h
+  );
+  await setHistory(updated);
+}
+
+async function setHistory(history: ScanHistoryEntry[]): Promise<void> {
+  try {
+    await AsyncStorage.setItem(KEYS.history, JSON.stringify(history));
+  } catch {
+    // non-fatal
   }
 }

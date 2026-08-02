@@ -130,7 +130,7 @@ async function listStudents(query = {}) {
       take: limit,
       orderBy: [{ lastName: 'asc' }, { firstName: 'asc' }],
       include: {
-        user: { select: { email: true } },
+        user: { select: { email: true, isSuspended: true } },
         course: { select: { id: true, code: true, name: true } },
         _count: { select: { attendanceRecords: true, sanctions: true, balances: true, disputes: true } },
       },
@@ -238,4 +238,29 @@ async function regenerateQr(userId) {
   return { qrCodeToken: updated.qrCodeToken, qrRegeneratedAt: updated.qrRegeneratedAt };
 }
 
-module.exports = { completeProfile, listStudents, getProfile, updateProfile, regenerateQr, uploadAvatar, getAvatarUrl };
+async function setSuspended(studentId, suspended) {
+  const student = await prisma.student.findUnique({
+    where: { id: studentId },
+    include: { user: { select: { role: true } } },
+  });
+  if (!student) throw new NotFoundError('Student not found');
+  if (student.user.role !== 'student') throw new ConflictError('Only student accounts can be suspended');
+
+  const updated = await prisma.user.update({
+    where: { id: student.userId },
+    data: { isSuspended: suspended },
+  });
+
+  return { id: student.id, isSuspended: updated.isSuspended };
+}
+
+module.exports = {
+  completeProfile,
+  listStudents,
+  getProfile,
+  updateProfile,
+  regenerateQr,
+  uploadAvatar,
+  getAvatarUrl,
+  setSuspended,
+};

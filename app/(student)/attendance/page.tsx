@@ -97,6 +97,34 @@ export default function AttendancePage() {
     fetchData()
   }, [])
 
+  useEffect(() => {
+    let active = true
+
+    async function refreshData() {
+      try {
+        const opts = { authenticated: true }
+        const [attRes, sancRes] = await Promise.all([
+          apiClient<{ data: AttendanceRecord[]; total: number }>('/attendance/history?limit=100', opts),
+          apiClient<SanctionStatus>('/attendance/sanctions', opts),
+        ])
+        if (active) {
+          setRecords(attRes.data)
+          setSanctions(sancRes)
+        }
+      } catch {
+        /* keep previous data on error */
+      }
+    }
+
+    const timer = setInterval(refreshData, 8000)
+    refreshData()
+
+    return () => {
+      active = false
+      clearInterval(timer)
+    }
+  }, [])
+
   const present = records.filter(r => r.status === 'present').length
   const late = records.filter(r => r.status === 'late').length
   const absent = records.filter(r => r.status === 'absent').length

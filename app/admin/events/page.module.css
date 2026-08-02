@@ -80,6 +80,58 @@
   min-width: 720px;
 }
 
+.formReviewDialog {
+  width: 100%;
+  max-width: 620px;
+}
+
+.reviewHeader {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 4px 0 16px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.reviewTitle {
+  margin: 0;
+  font-family: var(--font-heading);
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--color-neutral-900);
+  line-height: 1.3;
+}
+
+.reviewSubtitle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: var(--color-text-muted);
+}
+
+.reviewDescription {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.reviewDescription:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.reviewDescriptionText {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--color-text-primary);
+  white-space: pre-wrap;
+}
+
 .formDialogBody {
   overflow-y: auto;
   padding: 0;

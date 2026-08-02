@@ -67,4 +67,13 @@ async function getAvatarUrl(req, res, next) {
   }
 }
 
-module.exports = { listStudents, completeProfile, getProfile, updateProfile, regenerateQr, uploadAvatar, getAvatarUrl };
+async function suspend(req, res, next) {
+  try {
+    const result = await studentService.setSuspended(req.params.id, req.body.suspended === true);
+    res.json(result);
+  } catch (err) {
+    next(err);
+  }
+}
+
+module.exports = { listStudents, completeProfile, getProfile, updateProfile, regenerateQr, uploadAvatar, getAvatarUrl, suspend };

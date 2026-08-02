@@ -1,10 +1,10 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { StyleSheet, Text, TouchableOpacity, Vibration, View } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as Haptics from 'expo-haptics';
 import ResultCard from '../components/ResultCard';
 import { ApiError, isNetworkError, submitScan } from '../api';
-import { addPendingScan } from '../storage';
+import { addHistoryEntry, addPendingScan, getHistory, getPending } from '../storage';
 import { colors } from '../theme';
 import type { CachedSession, ScanFeedback } from '../types';
 
@@ -13,6 +13,7 @@ interface Props {
   deviceId: string;
   onScannedOffline: () => void;
   onOnlineSync: () => void;
+  onOpenHistory: () => void;
   onEnd: () => void;
 }
 
@@ -27,13 +28,34 @@ function formatWindow(session: CachedSession): string {
   return `${dateLabel} · ${fmt(session.startTime)} – ${fmt(session.endTime)}`;
 }
 
-export default function ScanScreen({ session, deviceId, onScannedOffline, onOnlineSync, onEnd }: Props) {
+export default function ScanScreen({ session, deviceId, onScannedOffline, onOnlineSync, onOpenHistory, onEnd }: Props) {
   const [permission, requestPermission] = useCameraPermissions();
   const [feedback, setFeedback] = useState<ScanFeedback | null>(null);
   const [processing, setProcessing] = useState(false);
   const [scannedCount, setScannedCount] = useState(0);
   const [torch, setTorch] = useState(false);
   const lastTokenRef = useRef<{ token: string; at: number } | null>(null);
+  const scannedTokensRef = useRef<Set<string>>(new Set());
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      const [pending, history] = await Promise.all([getPending(), getHistory()]);
+      if (!mounted) return;
+      for (const p of pending) {
+        if (
+          p.passcode === session.passcode &&
+          (p.status === 'pending' || p.status === 'duplicate')
+        ) {
+          scannedTokensRef.current.add(p.qrCodeToken);
+        }
+      }
+      setScannedCount(history.filter((h) => h.passcode === session.passcode).length);
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, [session.passcode]);
 
   async function handleBarcode(rawToken: string) {
     if (processing) return;
@@ -50,8 +72,24 @@ export default function ScanScreen({ session, deviceId, onScannedOffline, onOnli
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       setFeedback({
         kind: 'error',
-        title: 'Not in roster',
-        message: "This QR code isn't on the list for this event.",
+        title: 'Not on the list',
+        message: "This QR code isn't on the list for this event. Please check and try again.",
+      });
+      setTimeout(() => {
+        setFeedback(null);
+        setProcessing(false);
+      }, 2500);
+      return;
+    }
+
+    if (scannedTokensRef.current.has(token)) {
+      setProcessing(true);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      setFeedback({
+        kind: 'error',
+        title: 'Already recorded',
+        studentName: `${student.firstName} ${student.lastName}`,
+        message: "This student's attendance is already recorded for this event.",
       });
       setTimeout(() => {
         setFeedback(null);
@@ -79,18 +117,29 @@ export default function ScanScreen({ session, deviceId, onScannedOffline, onOnli
       setFeedback({
         kind: 'online',
         status: res.status,
-        title: res.status === 'late' ? 'Late' : 'Present',
+        title: res.status === 'late' ? 'Late' : 'Attendance recorded',
         studentName,
         message:
           res.status === 'late'
-            ? 'Marked as late.'
-            : 'Recorded as present.',
+            ? 'Marked as late for this event.'
+            : 'Marked as present for this event.',
       });
       setScannedCount((c) => c + 1);
+      scannedTokensRef.current.add(token);
+      void addHistoryEntry({
+        passcode: session.passcode,
+        eventTitle: session.title,
+        studentId: student.id,
+        studentName,
+        studentNumber: student.studentId,
+        scannedAt,
+        synced: true,
+        status: res.status,
+      });
       onOnlineSync();
     } catch (err) {
       if (isNetworkError(err)) {
-        await addPendingScan({
+        const pending = await addPendingScan({
           passcode: session.passcode,
           qrCodeToken: token,
           studentId: student.id,
@@ -99,15 +148,27 @@ export default function ScanScreen({ session, deviceId, onScannedOffline, onOnli
           scannedAt,
           status: 'pending',
         });
+        void addHistoryEntry({
+          pendingId: pending.id,
+          passcode: session.passcode,
+          eventTitle: session.title,
+          studentId: student.id,
+          studentName,
+          studentNumber: student.studentId,
+          scannedAt,
+          synced: false,
+        });
         Vibration.vibrate(100);
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
         setFeedback({
           kind: 'offline',
-          title: 'Saved offline',
+          title: 'Saved on this phone',
           studentName,
-          message: "No internet right now — this scan is saved on your device and will sync automatically.",
+          message:
+            "You're offline right now. This scan is saved on this phone and will be sent automatically when you're back online.",
         });
         setScannedCount((c) => c + 1);
+        scannedTokensRef.current.add(token);
         onScannedOffline();
       } else if (err instanceof ApiError && err.statusCode === 409) {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
@@ -115,16 +176,16 @@ export default function ScanScreen({ session, deviceId, onScannedOffline, onOnli
           kind: 'error',
           title: 'Already recorded',
           studentName,
-          message: 'This student was already recorded for this event.',
+          message: "This student's attendance is already recorded for this event.",
         });
       } else {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
         setFeedback({
           kind: 'error',
-          title: 'Could not record',
+          title: "Couldn't record",
           studentName,
           message:
-            err instanceof Error ? err.message : 'Something went wrong. Please try again.',
+            err instanceof ApiError ? err.message : "Something went wrong. Please try again.",
         });
       }
     } finally {
@@ -193,6 +254,9 @@ export default function ScanScreen({ session, deviceId, onScannedOffline, onOnli
           <Text style={styles.footerBtnText}>{torch ? 'Flash off' : 'Flash on'}</Text>
         </TouchableOpacity>
         <Text style={styles.counter}>Scanned: {scannedCount}</Text>
+        <TouchableOpacity style={styles.footerBtn} onPress={onOpenHistory} activeOpacity={0.85}>
+          <Text style={styles.footerBtnText}>Scanned QR</Text>
+        </TouchableOpacity>
       </View>
     </View>
   );
@@ -260,7 +324,7 @@ const styles = StyleSheet.create({
   },
   scanHint: {
     color: colors.neutral0,
-    backgroundColor: 'rgba(15,32,39,0.6)',
+    backgroundColor: 'rgba(0,0,0,0.7)',
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 8,

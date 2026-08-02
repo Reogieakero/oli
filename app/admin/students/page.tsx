@@ -9,6 +9,7 @@ import { Select, type SelectOption } from '@/components/ui/Select/Select'
 import { DataTable, type Column } from '@/components/ui/DataTable/DataTable'
 import { Dialog } from '@/components/ui/Dialog/Dialog'
 import { Button } from '@/components/ui/Button/Button'
+import { useToast } from '@/components/ui/Toast/Toast'
 import styles from './page.module.css'
 
 const PAGE_SIZE = 20
@@ -20,7 +21,7 @@ interface StudentRow {
   studentId: string
   yearLevel: number
   createdAt: string
-  user: { email: string }
+  user: { email: string; isSuspended: boolean }
   course: { id: string; code: string; name: string } | null
   _count: { attendanceRecords: number; sanctions: number; balances: number; disputes: number }
 }
@@ -44,6 +45,7 @@ function formatDate(dateStr: string): string {
 
 export default function AdminStudentsPage() {
   const router = useRouter()
+  const { toast } = useToast()
 
   const [data, setData] = useState<StudentRow[]>([])
   const [total, setTotal] = useState(0)
@@ -52,6 +54,7 @@ export default function AdminStudentsPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [filterCourse, setFilterCourse] = useState('')
   const [courseOptions, setCourseOptions] = useState<SelectOption[]>([])
+  const [suspending, setSuspending] = useState(false)
 
   const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -93,6 +96,33 @@ export default function AdminStudentsPage() {
     searchTimerRef.current = setTimeout(() => setPage(1), 250)
   }, [])
 
+  const handleSuspendToggle = useCallback(async (row: StudentRow) => {
+    const shouldSuspend = !row.user.isSuspended
+    setSuspending(true)
+    try {
+      const res = await apiClient<{ id: string; isSuspended: boolean }>(
+        `/students/${row.id}/suspend`,
+        { method: 'PATCH', body: { suspended: shouldSuspend }, authenticated: true }
+      )
+      toast({
+        message: shouldSuspend
+          ? `${row.firstName} ${row.lastName} has been suspended`
+          : `${row.firstName} ${row.lastName} has been reactivated`,
+        variant: shouldSuspend ? 'warning' : 'success',
+      })
+      await fetchData()
+      setDetailRecord((prev) => (prev ? { ...prev, user: { ...prev.user, isSuspended: res.isSuspended } } : prev))
+    } catch (err) {
+      if (err instanceof ApiError && err.statusCode === 401) {
+        router.replace('/admin-login')
+      } else {
+        toast({ message: 'Failed to update account status', variant: 'error' })
+      }
+    } finally {
+      setSuspending(false)
+    }
+  }, [fetchData, router, toast])
+
   const pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE))
 
   const columns: Column<StudentRow>[] = useMemo(() => [
@@ -123,6 +153,14 @@ export default function AdminStudentsPage() {
       key: 'user',
       header: 'Email',
       render: (row) => <span className={styles.muted}>{row.user.email}</span>,
+    },
+    {
+      key: 'suspended',
+      header: 'Status',
+      render: (row) =>
+        row.user.isSuspended
+          ? <Badge variant="danger">Suspended</Badge>
+          : <Badge variant="success">Active</Badge>,
     },
     {
       key: '_count',
@@ -181,6 +219,17 @@ export default function AdminStudentsPage() {
         footer={
           <div className={styles.dialogFooter}>
             <Button variant="ghost" onClick={() => setDetailRecord(null)}>Close</Button>
+            <Button
+              variant={detailRecord?.user.isSuspended ? 'primary' : 'destructive'}
+              onClick={() => detailRecord && handleSuspendToggle(detailRecord)}
+              disabled={suspending}
+            >
+              {suspending
+                ? 'Saving...'
+                : detailRecord?.user.isSuspended
+                  ? 'Reactivate Account'
+                  : 'Suspend Account'}
+            </Button>
           </div>
         }
       >
@@ -199,6 +248,12 @@ export default function AdminStudentsPage() {
                 <div className={styles.drawerField}>
                   <span className={styles.drawerFieldLabel}>Email</span>
                   <span className={styles.drawerFieldValue}>{detailRecord.user.email}</span>
+                </div>
+                <div className={styles.drawerField}>
+                  <span className={styles.drawerFieldLabel}>Status</span>
+                  <span className={styles.drawerFieldValue}>
+                    {detailRecord.user.isSuspended ? <Badge variant="danger">Suspended</Badge> : <Badge variant="success">Active</Badge>}
+                  </span>
                 </div>
                 <div className={styles.drawerField}>
                   <span className={styles.drawerFieldLabel}>Course</span>

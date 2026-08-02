@@ -4,7 +4,15 @@ const { v4: uuidv4 } = require('uuid');
 const crypto = require('crypto');
 const prisma = require('../../config/database');
 const env = require('../../config/env');
-const { ConflictError, UnauthorizedError, NotFoundError } = require('../../utils/errors');
+const { ConflictError, UnauthorizedError, NotFoundError, ForbiddenError } = require('../../utils/errors');
+
+const SUSPENDED_MESSAGE = 'Your account has been suspended by the faculty. Please approach the faculty officers for assistance.';
+
+function assertNotSuspended(user) {
+  if (user.isSuspended) {
+    throw new ForbiddenError(SUSPENDED_MESSAGE);
+  }
+}
 
 function generateTokens(user) {
   const accessToken = jwt.sign(
@@ -98,6 +106,8 @@ async function loginStudent(email, password) {
     throw new UnauthorizedError('Invalid email or password');
   }
 
+  assertNotSuspended(user);
+
   const tokens = generateTokens(user);
 
   return {
@@ -150,6 +160,8 @@ async function refreshAccessToken(refreshToken) {
       throw new UnauthorizedError('User not found');
     }
 
+    assertNotSuspended(user);
+
     const tokens = generateTokens(user);
     return { accessToken: tokens.accessToken };
   } catch (err) {
@@ -164,4 +176,6 @@ module.exports = {
   loginStudent,
   loginFaculty,
   refreshAccessToken,
+  assertNotSuspended,
+  SUSPENDED_MESSAGE,
 };

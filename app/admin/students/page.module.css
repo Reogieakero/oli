@@ -61,7 +61,7 @@
 .detailBody {
   overflow-y: auto;
   scrollbar-width: none;
-  padding: 0 !important;
+  padding: var(--space-4) !important;
 }
 
 .detailBody::-webkit-scrollbar {

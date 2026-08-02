@@ -14,8 +14,8 @@ export default function SyncBanner({ pendingCount, isOnline, syncing, onSync }: 
   const label = syncing
     ? 'Sending your saved scans…'
     : isOnline
-      ? `You have ${pendingCount} saved scan${pendingCount > 1 ? 's' : ''} waiting to sync`
-      : `${pendingCount} saved scan${pendingCount > 1 ? 's' : ''} — will send when you're back online`;
+      ? `You have ${pendingCount} scan${pendingCount > 1 ? 's' : ''} waiting to be sent`
+      : `${pendingCount} scan${pendingCount > 1 ? 's' : ''} — will be sent when you're back online`;
 
   return (
     <View style={styles.banner}>

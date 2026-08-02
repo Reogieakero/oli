@@ -74,7 +74,7 @@ interface EventRow {
   facultyName: string
   recordCount: number
   attendanceRate: number | null
-  status: 'upcoming' | 'today' | 'completed'
+  status: 'upcoming' | 'ongoing' | 'completed'
 }
 
 const DETAIL_TABS: Tab[] = [
@@ -82,12 +82,12 @@ const DETAIL_TABS: Tab[] = [
   { id: 'attendance', label: 'Attendance' },
 ]
 
-function getStatus(eventDate: string): 'upcoming' | 'today' | 'completed' {
+function getStatus(eventDate: string): 'upcoming' | 'ongoing' | 'completed' {
   const today = new Date()
   const date = parseLocalDate(eventDate)
   today.setHours(0, 0, 0, 0)
   date.setHours(0, 0, 0, 0)
-  if (date.getTime() === today.getTime()) return 'today'
+  if (date.getTime() === today.getTime()) return 'ongoing'
   if (date > today) return 'upcoming'
   return 'completed'
 }
@@ -106,8 +106,14 @@ function toTimeInput(value: string): string {
 
 const STATUS_BADGE: Record<string, 'success' | 'warning' | 'neutral'> = {
   upcoming: 'success',
-  today: 'warning',
+  ongoing: 'warning',
   completed: 'neutral',
+}
+
+const STATUS_LABEL: Record<string, string> = {
+  upcoming: 'Upcoming',
+  ongoing: 'Ongoing',
+  completed: 'Completed',
 }
 
 const RATE_BADGE = (rate: number | null): 'success' | 'warning' | 'danger' => {
@@ -277,7 +283,7 @@ export default function AdminEventsPage() {
   const statusOptions: SelectOption[] = [
     { value: '', label: 'All Status' },
     { value: 'upcoming', label: 'Upcoming' },
-    { value: 'today', label: 'Today' },
+    { value: 'ongoing', label: 'Ongoing' },
     { value: 'completed', label: 'Completed' },
   ]
 
@@ -626,7 +632,7 @@ export default function AdminEventsPage() {
       key: 'status',
       header: 'Status',
       sortable: true,
-      render: (row) => <Badge variant={STATUS_BADGE[row.status] ?? 'neutral'}>{row.status}</Badge>,
+      render: (row) => <Badge variant={STATUS_BADGE[row.status] ?? 'neutral'}>{STATUS_LABEL[row.status] ?? row.status}</Badge>,
     },
     {
       key: 'actions',
@@ -713,8 +719,8 @@ export default function AdminEventsPage() {
         open={formOpen}
         onClose={() => { setFormStep('form'); setFormOpen(false) }}
         title={editingEvent ? 'Edit Event' : 'Create Event'}
-        fullscreen
-        className={styles.formDialog}
+        fullscreen={formStep === 'form'}
+        className={formStep === 'preview' ? styles.formReviewDialog : styles.formDialog}
         bodyClassName={styles.formDialogBody}
         footer={
           formStep === 'preview' ? (
@@ -752,65 +758,66 @@ export default function AdminEventsPage() {
               </button>
             )}
             <LoadingOverlay visible={formSubmitting} message={editingEvent ? 'Updating event...' : 'Creating event...'}>
-              <div className={styles.detailGrid}>
-                {formCoverPreview && (
-                  <div className={styles.detailCover}>
-                    <img src={formCoverPreview} alt="Cover" className={styles.detailCoverImage} />
-                  </div>
-                )}
-                {formImportantNotice.trim() && (
-                  <div className={styles.noticeBanner}>
-                    <strong>Important Notice:</strong> {formImportantNotice}
-                  </div>
-                )}
-                {formError && <div className={styles.formError}>{formError}</div>}
-                <div className={styles.detailItem}>
-                  <span className={styles.detailLabel}>Title</span>
-                  <span>{formTitle}</span>
+              {formCoverPreview && (
+                <div className={styles.detailCover}>
+                  <img src={formCoverPreview} alt="Cover" className={styles.detailCoverImage} />
                 </div>
-                <div className={styles.detailItem}>
-                  <span className={styles.detailLabel}>Venue</span>
-                  <span>{formVenue}</span>
+              )}
+              {formImportantNotice.trim() && (
+                <div className={styles.noticeBanner}>
+                  <strong>Important Notice:</strong> {formImportantNotice}
                 </div>
-                <div className={styles.detailItem}>
-                  <span className={styles.detailLabel}>Date</span>
-                  <span>{new Date(formEventDate + 'T00:00:00').toLocaleDateString()}</span>
-                </div>
-                <div className={styles.detailItem}>
-                  <span className={styles.detailLabel}>Time</span>
+              )}
+              {formError && <div className={styles.formError}>{formError}</div>}
+              <div className={styles.reviewHeader}>
+                <h3 className={styles.reviewTitle}>{formTitle}</h3>
+                <div className={styles.reviewSubtitle}>
+                  <Badge variant={formIsMandatory ? 'warning' : 'neutral'}>
+                    {formIsMandatory ? 'Mandatory' : 'Optional'}
+                  </Badge>
                   <span>{formatTime(formStartTime)} – {formatTime(formEndTime)}</span>
                 </div>
-                <div className={styles.detailItem}>
-                  <span className={styles.detailLabel}>Late Cutoff</span>
-                  <span>{formLateCutoff} min</span>
+              </div>
+              <div className={styles.detailGridPro}>
+                <div className={styles.detailRowPro}>
+                  <span className={styles.detailLabelPro}>Venue</span>
+                  <span className={styles.detailValuePro}>{formVenue}</span>
                 </div>
-                <div className={styles.detailItem}>
-                  <span className={styles.detailLabel}>Course</span>
-                  {(() => {
-                    const c = courses.find((co) => co.id === formCourseId)
-                    return c ? <Badge variant="brand">{c.code}</Badge> : <span className={styles.muted}>—</span>
-                  })()}
+                <div className={styles.detailRowPro}>
+                  <span className={styles.detailLabelPro}>Date</span>
+                  <span className={styles.detailValuePro}>{new Date(formEventDate + 'T00:00:00').toLocaleDateString()}</span>
                 </div>
-                <div className={styles.detailItem}>
-                  <span className={styles.detailLabel}>Year Level</span>
-                  <span>{formYearLevel ? `Year ${formYearLevel}` : 'All'}</span>
+                <div className={styles.detailRowPro}>
+                  <span className={styles.detailLabelPro}>Late Cutoff</span>
+                  <span className={styles.detailValuePro}>{formLateCutoff} min</span>
                 </div>
-                <div className={styles.detailItem}>
-                  <span className={styles.detailLabel}>Mandatory</span>
-                  <Badge variant={formIsMandatory ? 'warning' : 'neutral'}>{formIsMandatory ? 'Yes' : 'No'}</Badge>
+                <div className={styles.detailRowPro}>
+                  <span className={styles.detailLabelPro}>Course</span>
+                  <span className={styles.detailValuePro}>
+                    {(() => {
+                      const c = courses.find((co) => co.id === formCourseId)
+                      return c ? <Badge variant="brand">{c.code}</Badge> : <span className={styles.muted}>—</span>
+                    })()}
+                  </span>
                 </div>
-                <div className={styles.detailItem}>
-                  <span className={styles.detailLabel}>Passcode</span>
-                  <code className={styles.passcode}>{formPasscode}</code>
+                <div className={styles.detailRowPro}>
+                  <span className={styles.detailLabelPro}>Year Level</span>
+                  <span className={styles.detailValuePro}>{formYearLevel ? `Year ${formYearLevel}` : 'All'}</span>
                 </div>
-                <div className={styles.detailItem}>
-                  <span className={styles.detailLabel}>Passcode Expiry</span>
-                  <span>{formPasscodeExpiryDate && formPasscodeExpiryTime ? new Date(`${formPasscodeExpiryDate}T${formPasscodeExpiryTime}:00`).toLocaleString() : 'Never'}</span>
+                <div className={styles.detailRowPro}>
+                  <span className={styles.detailLabelPro}>Passcode</span>
+                  <span className={styles.detailValuePro}>
+                    <code className={styles.passcode}>{formPasscode}</code>
+                  </span>
+                </div>
+                <div className={styles.detailRowPro}>
+                  <span className={styles.detailLabelPro}>Passcode Expiry</span>
+                  <span className={styles.detailValuePro}>{formPasscodeExpiryDate && formPasscodeExpiryTime ? new Date(`${formPasscodeExpiryDate}T${formPasscodeExpiryTime}:00`).toLocaleString() : 'Never'}</span>
                 </div>
                 {formDescription.trim() && (
-                  <div className={styles.detailItemFull}>
-                    <span className={styles.detailLabel}>Description</span>
-                    <p className={styles.detailDescription}>{formDescription}</p>
+                  <div className={styles.reviewDescription}>
+                    <span className={styles.detailLabelPro}>Description</span>
+                    <p className={styles.reviewDescriptionText}>{formDescription}</p>
                   </div>
                 )}
               </div>
@@ -1003,7 +1010,7 @@ export default function AdminEventsPage() {
                 </Button>
               )}
               {detailEvent && getStatus(detailEvent.eventDate) === 'completed' && (
-                <Button variant="brand" onClick={() => handleFinalize(detailEvent.id)} disabled={finalizing}>
+                <Button variant="primary" onClick={() => handleFinalize(detailEvent.id)} disabled={finalizing}>
                   {finalizing ? 'Finalizing...' : 'Finalize'}
                 </Button>
               )}
@@ -1043,7 +1050,7 @@ export default function AdminEventsPage() {
                     <span className={styles.detailLabelPro}>Status</span>
                     <span className={styles.detailValuePro}>
                       <Badge variant={STATUS_BADGE[getStatus(detailEvent.eventDate)]}>
-                        {getStatus(detailEvent.eventDate)}
+                        {STATUS_LABEL[getStatus(detailEvent.eventDate)]}
                       </Badge>
                     </span>
                   </div>

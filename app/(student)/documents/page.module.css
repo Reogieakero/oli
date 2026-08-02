@@ -1,0 +1,358 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding-bottom: var(--space-16);
+}
+
+.headerRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.title {
+  font-family: var(--font-heading);
+  font-size: var(--text-2xl);
+  font-weight: 700;
+  margin: 0;
+  color: var(--color-neutral-900);
+}
+
+.search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--color-neutral-0);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+  padding: 8px 12px;
+  width: 240px;
+  max-width: 100%;
+}
+
+.searchInput {
+  border: none;
+  outline: none;
+  background: transparent;
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  color: var(--color-neutral-900);
+  width: 100%;
+}
+
+.searchInput::placeholder {
+  color: var(--color-muted-fg);
+}
+
+.feed {
+  max-width: 470px;
+  width: 100%;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.post {
+  background: var(--color-neutral-0);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
+
+.postHeader {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+}
+
+.avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--color-brand-dark);
+  color: var(--color-neutral-0);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.postUser {
+  flex: 1;
+  min-width: 0;
+}
+
+.userName {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--color-neutral-900);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.postTime {
+  font-size: var(--text-xs);
+  color: var(--color-muted-fg);
+}
+
+.postMenu {
+  border: none;
+  background: none;
+  color: var(--color-muted-fg);
+  padding: 4px;
+  cursor: pointer;
+  line-height: 0;
+}
+
+.postMedia {
+  width: 100%;
+  background: var(--color-muted-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.postImage {
+  width: 100%;
+  max-height: 480px;
+  object-fit: cover;
+  display: block;
+}
+
+.fileHero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 44px 24px;
+  width: 100%;
+  color: var(--color-brand-dark);
+}
+
+.fileIcon {
+  width: 56px;
+  height: 56px;
+  border-radius: var(--radius-control);
+  background: var(--color-muted-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.fileName {
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--color-neutral-900);
+  text-align: center;
+  max-width: 90%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fileSub {
+  font-size: var(--text-xs);
+  color: var(--color-muted-fg);
+}
+
+.postBody {
+  padding: 12px 14px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.postTitle {
+  font-size: var(--text-sm);
+  font-weight: 700;
+  color: var(--color-neutral-900);
+  margin: 0;
+}
+
+.postDesc {
+  font-size: var(--text-sm);
+  color: var(--color-muted-fg);
+  margin: 0;
+  white-space: pre-line;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+}
+
+.metaRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-size: var(--text-xs);
+  color: var(--color-muted-fg);
+}
+
+.metaFile {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 160px;
+}
+
+.emptyState {
+  padding: 60px 20px;
+  text-align: center;
+  color: var(--color-muted-fg);
+  font-size: var(--text-sm);
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-neutral-0);
+}
+
+.viewBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 1px solid var(--color-brand-dark);
+  background: var(--color-neutral-0);
+  color: var(--color-brand-dark);
+  font-family: var(--font-body);
+  font-size: var(--control-font-size);
+  font-weight: 600;
+  padding: 8px 14px;
+  border-radius: var(--radius-control);
+  cursor: pointer;
+  text-decoration: none;
+  align-self: flex-start;
+}
+
+.viewBtn:hover {
+  background: var(--color-muted-bg);
+}
+
+.viewerBackdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 32, 39, 0.6);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.viewer {
+  background: var(--color-neutral-0);
+  border-radius: var(--radius-md);
+  width: 100%;
+  max-width: 900px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: var(--shadow-lg);
+}
+
+.viewerHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.viewerTitleWrap {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.viewerTitle {
+  font-size: var(--text-base);
+  font-weight: 700;
+  color: var(--color-neutral-900);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.viewerSub {
+  font-size: var(--text-xs);
+  color: var(--color-muted-fg);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.viewerClose {
+  border: none;
+  background: none;
+  color: var(--color-muted-fg);
+  padding: 6px;
+  cursor: pointer;
+  line-height: 0;
+  border-radius: var(--radius-sm);
+  flex-shrink: 0;
+}
+
+.viewerClose:hover {
+  color: var(--color-neutral-900);
+  background: var(--color-muted-bg);
+}
+
+.viewerBody {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-muted-bg);
+  overflow: auto;
+}
+
+.viewerLoading {
+  padding: 60px;
+}
+
+.viewerFrame {
+  width: 100%;
+  height: 70vh;
+  border: none;
+  background: var(--color-neutral-0);
+}
+
+.viewerImage {
+  max-width: 100%;
+  max-height: 70vh;
+  object-fit: contain;
+  display: block;
+}
+
+.viewerFallback {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 60px 24px;
+  text-align: center;
+  color: var(--color-brand-dark);
+}
+
+.fallbackText {
+  font-size: var(--text-sm);
+  color: var(--color-muted-fg);
+  max-width: 320px;
+}

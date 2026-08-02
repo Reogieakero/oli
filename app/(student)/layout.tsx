@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
-import { apiClient } from '@/lib/apiClient'
+import { apiClient, ApiError } from '@/lib/apiClient'
 import { ToastProvider } from '@/components/ui/Toast/Toast'
 import { ProfileSetup } from './components/ProfileSetup'
 import styles from './layout.module.css'
@@ -14,6 +14,7 @@ const NAV_ITEMS = [
   { href: '/attendance', label: 'Attendance' },
   { href: '/events', label: 'Events' },
   { href: '/announcements', label: 'Announcements' },
+  { href: '/documents', label: 'Documents' },
   { href: '/balances', label: 'Balances' },
   { href: '/profile', label: 'Profile' },
 ]
@@ -34,7 +35,15 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
     setAuthed(true)
     apiClient<{ profileComplete: boolean }>('/students/me', { authenticated: true })
       .then((res) => setProfileComplete(res.profileComplete))
-      .catch(() => setProfileComplete(false))
+      .catch((err) => {
+        if (err instanceof ApiError && err.statusCode === 403) {
+          document.cookie = 'access_token=; path=/; max-age=0'
+          document.cookie = 'refresh_token=; path=/; max-age=0'
+          router.replace(`/login?error=${encodeURIComponent(err.message)}`)
+          return
+        }
+        setProfileComplete(false)
+      })
   }, [router])
 
   if (!authed) return null

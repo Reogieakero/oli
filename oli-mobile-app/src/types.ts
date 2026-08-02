@@ -55,3 +55,16 @@ export interface ScanFeedback {
   studentName?: string;
   timestamp?: string;
 }
+
+export interface ScanHistoryEntry {
+  id: string;
+  pendingId?: string;
+  passcode: string;
+  eventTitle: string;
+  studentId?: string;
+  studentName?: string;
+  studentNumber?: string;
+  scannedAt: string;
+  synced: boolean;
+  status?: 'present' | 'late';
+}

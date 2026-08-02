@@ -10,6 +10,7 @@ const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 *
 const router = Router();
 
 router.get('/', authenticate, authorize('faculty'), controller.listStudents);
+router.patch('/:id/suspend', authenticate, authorize('faculty'), controller.suspend);
 router.get('/me', authenticate, controller.getProfile);
 router.put('/me', authenticate, controller.updateProfile);
 router.post('/me/complete-profile', authenticate, validate(completeProfileSchema), controller.completeProfile);
