@@ -87,6 +87,69 @@ const FEATURES = [
   },
 ]
 
+const MANUAL_STEPS = [
+  {
+    step: 1,
+    title: 'Sign in for the first time',
+    items: [
+      'Click Sign In and choose "Sign in with Google".',
+      'Use your institution email address.',
+      'Complete your student profile the first time you sign in.',
+      'You are now ready to use your dashboard.',
+    ],
+  },
+  {
+    step: 2,
+    title: 'Attend an event with QR',
+    items: [
+      'Open the Events page and find today\'s event and venue.',
+      'At the venue, scan the QR code shown by faculty using your phone camera.',
+      'You will be marked Present (or Late if you scan after the cutoff).',
+      'Verify your status on the Attendance page.',
+    ],
+  },
+  {
+    step: 3,
+    title: 'Review your attendance',
+    items: [
+      'Go to Attendance to see every record and its status.',
+      'Statuses are shown as Present, Late, or Absent with dates.',
+      'Spot a mistake? Click Dispute and give your reason.',
+      'Track your dispute until faculty resolves it.',
+    ],
+  },
+  {
+    step: 4,
+    title: 'View balances & payments',
+    items: [
+      'Open Balances to see amounts you owe and due dates.',
+      'Follow the payment instructions shown for each balance.',
+      'Keep your payment reference number for verification.',
+      'Your balance updates once faculty records the payment.',
+    ],
+  },
+  {
+    step: 5,
+    title: 'Send feedback',
+    items: [
+      'Open the Feedback page from your portal or this landing page.',
+      'Choose For the System or For the Faculty.',
+      'Write your message — it is sent anonymously.',
+      'Faculty can respond, and you can check back anytime.',
+    ],
+  },
+  {
+    step: 6,
+    title: 'Find answers & get help',
+    items: [
+      'Browse the FAQ page for answers to common questions.',
+      'Use Send Feedback for anything the FAQ does not cover.',
+      'Watch Announcements and Documents for faculty guidance.',
+      'Your attendance and balance history is always available to you.',
+    ],
+  },
+]
+
 export default function LandingPage() {
   return (
     <div className={styles.page}>
@@ -182,6 +245,32 @@ export default function LandingPage() {
                 Whether you are checking in at an event, reviewing your attendance history, or submitting a payment receipt, Liberalis keeps everything organized and accessible.
               </p>
             </div>
+          </div>
+        </section>
+
+        <div className={styles.divider}>
+          <hr className={styles.dividerLine} />
+        </div>
+
+        <section className={styles.manual}>
+          <div className={styles.manualHeader}>
+            <h2 className={styles.manualTitle}>User Manual</h2>
+            <p className={styles.manualSubtitle}>
+              A simple step-by-step guide to using Liberalis as a student. Follow the numbered steps to get started.
+            </p>
+          </div>
+          <div className={styles.manualGrid}>
+            {MANUAL_STEPS.map((guide) => (
+              <div key={guide.step} className={styles.manualCard}>
+                <span className={styles.manualStep}>{String(guide.step).padStart(2, '0')}</span>
+                <h3 className={styles.manualCardTitle}>{guide.title}</h3>
+                <ol className={styles.manualList}>
+                  {guide.items.map((item, i) => (
+                    <li key={i}>{item}</li>
+                  ))}
+                </ol>
+              </div>
+            ))}
           </div>
         </section>
 
