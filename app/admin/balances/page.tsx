@@ -1043,7 +1043,7 @@ export default function AdminBalancesPage() {
           </div>
           <div className={styles.field}>
             <label className={styles.label}>Account Name (optional)</label>
-            <Input value={newMethodAccountName} onChange={(e) => setNewMethodAccountName(e.target.value)} placeholder="e.g. OLI Faculty Account" />
+            <Input value={newMethodAccountName} onChange={(e) => setNewMethodAccountName(e.target.value)} placeholder="e.g. Liberalis Faculty Account" />
           </div>
           <div className={styles.field}>
             <label className={styles.label}>Account Number (optional)</label>

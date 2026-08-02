@@ -2,16 +2,12 @@ const app = require('./app');
 const prisma = require('./config/database');
 const env = require('./config/env');
 const logger = require('./utils/logger');
-const { seedFaculty } = require('./db/seed');
 const { applyRLS } = require('./db/rls');
 
 async function main() {
   try {
     await prisma.$connect();
     logger.info('Database connected');
-
-    await seedFaculty();
-    logger.info('Faculty account seeded');
 
     await applyRLS();
     logger.info('RLS policies applied');

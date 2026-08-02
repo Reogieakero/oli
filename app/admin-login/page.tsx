@@ -107,7 +107,7 @@ export default function AdminLoginPage() {
             <path d="M12 2 L14.5 9.5 L22 12 L14.5 14.5 L12 22 L9.5 14.5 L2 12 L9.5 9.5 Z" fill="currentColor" />
           </svg>
         </span>
-        OLI
+        Liberalis
       </div>
 
       <Card className={styles.card}>
@@ -174,7 +174,7 @@ export default function AdminLoginPage() {
           <hr className={styles.divider} />
 
           <div className={styles.footer}>
-            <p className={styles.footerText}>OLI Attendance System &middot; Faculty Access</p>
+            <p className={styles.footerText}>Liberalis Attendance System &middot; Faculty Access</p>
           </div>
         </CardBody>
       </Card>

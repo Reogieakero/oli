@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import {
   ActivityIndicator,
+  Image,
   KeyboardAvoidingView,
   Platform,
   StyleSheet,
@@ -50,9 +51,7 @@ export default function PasscodeScreen({
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <View style={styles.header}>
-        <View style={styles.logoBadge}>
-          <Text style={styles.logoText}>OLI</Text>
-        </View>
+        <Image source={require('../../assets/logo.jpg')} style={styles.logo} />
         <Text style={styles.title}>Attendance Scanner</Text>
         <Text style={styles.subtitle}>Scan student QR codes to record attendance</Text>
       </View>
@@ -150,18 +149,11 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
-  logoBadge: {
-    backgroundColor: colors.brandDark,
-    borderRadius: 10,
-    paddingHorizontal: 16,
-    paddingVertical: 6,
+  logo: {
+    width: 56,
+    height: 56,
+    borderRadius: 12,
     marginBottom: 14,
-  },
-  logoText: {
-    color: colors.neutral0,
-    fontWeight: '800',
-    fontSize: 18,
-    letterSpacing: 3,
   },
   title: {
     fontSize: 26,

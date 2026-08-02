@@ -60,7 +60,7 @@ app.get('/api/v1/health', (_req, res) => {
 });
 
 app.get('/', (_req, res) => {
-  res.json({ name: 'OLI API', status: 'ok' });
+  res.json({ name: 'Liberalis API', status: 'ok' });
 });
 
 app.use(errorHandler);
