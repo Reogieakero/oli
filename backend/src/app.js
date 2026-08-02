@@ -23,10 +23,19 @@ const app = express();
 
 app.set('etag', false);
 
-app.use(cors({
-  origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
+const corsOptions = {
+  origin(origin, callback) {
+    const allowed = (process.env.CORS_ORIGIN || '*').split(',').map((s) => s.trim());
+    if (!origin || allowed.includes('*') || allowed.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(null, false);
+    }
+  },
   credentials: true,
-}));
+};
+
+app.use(cors(corsOptions));
 app.use(express.json());
 app.use(requestId);
 app.use(morgan(':method :url :status :response-time ms - :req[x-request-id]'));
