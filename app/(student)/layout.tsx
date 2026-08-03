@@ -70,6 +70,16 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
       })
   }, [router])
 
+  useEffect(() => {
+    if (menuOpen) {
+      const prev = document.body.style.overflow
+      document.body.style.overflow = 'hidden'
+      return () => {
+        document.body.style.overflow = prev
+      }
+    }
+  }, [menuOpen])
+
   if (!authed) return null
   if (profileComplete === null) {
     return (
